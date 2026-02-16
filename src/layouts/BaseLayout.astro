@@ -1,0 +1,95 @@
+---
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="description" content="Automated tech news aggregator" />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="icon" type="image/svg+xml" href="/pub-blog/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+  </head>
+  <body>
+    <header>
+      <nav>
+        <a href="/pub-blog/">Home</a>
+        <a href="/pub-blog/posts">Posts</a>
+      </nav>
+    </header>
+    <slot />
+    <footer>
+      <p>&copy; {new Date().getFullYear()} pub-blog - Automated News Aggregator</p>
+    </footer>
+  </body>
+</html>
+
+<style is:global>
+  :root {
+    --accent: 0ea5e9;
+    --accent-dark: 0284c7;
+    --black: 15, 18, 25;
+    --gray: 96, 115, 159;
+    --gray-light: 229, 233, 240;
+    --gray-dark: 34, 41, 57;
+    --gray-gradient: rgba(var(--gray-light), 50%), #fff;
+    --box-shadow: 0 2px 6px rgba(var(--gray), 25%), 0 8px 24px rgba(var(--gray), 33%),
+      0 16px 32px rgba(var(--gray), 33%);
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    font-family: system-ui, sans-serif;
+    background: #f8fafc;
+    color: rgb(var(--black));
+  }
+
+  body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    background: white;
+    border-bottom: 1px solid rgb(var(--gray-light));
+    padding: 1rem 2rem;
+  }
+
+  nav {
+    display: flex;
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  nav a {
+    color: rgb(var(--gray-dark));
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s;
+  }
+
+  nav a:hover {
+    color: rgb(var(--accent));
+  }
+
+  footer {
+    margin-top: auto;
+    background: rgb(var(--gray-dark));
+    color: rgb(var(--gray-light));
+    padding: 2rem;
+    text-align: center;
+  }
+</style>

@@ -1,0 +1,46 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Welcome to pub-blog">
+  <main>
+    <h1>🚀 Welcome to pub-blog</h1>
+    <p>
+      This is an automated news aggregator powered by Astro, migrated from the feedmeup Jekyll project.
+    </p>
+    <p>
+      <a href="/pub-blog/posts">View all posts →</a>
+    </p>
+  </main>
+</BaseLayout>
+
+<style>
+  main {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+  }
+  
+  h1 {
+    font-size: 3rem;
+    font-weight: 800;
+    margin: 0;
+    color: #0f172a;
+  }
+  
+  p {
+    font-size: 1.25rem;
+    line-height: 1.75;
+    color: #475569;
+  }
+  
+  a {
+    color: #0ea5e9;
+    text-decoration: none;
+    font-weight: 600;
+  }
+  
+  a:hover {
+    text-decoration: underline;
+  }
+</style>
