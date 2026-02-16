@@ -1,68 +1,180 @@
 ---
 interface Props {
   title: string;
+  description?: string;
 }
 
-const { title } = Astro.props;
+const { title, description = "Automated news aggregation for Cloud, Cybersecurity, AI, and ML" } = Astro.props;
+const currentPath = Astro.url.pathname;
+
+// Import global styles
+import '../styles/global.css';
 ---
 
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="description" content="Automated tech news aggregator" />
-    <meta name="viewport" content="width=device-width" />
+    <meta name="description" content={description} />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/pub-blog/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
-    <title>{title}</title>
+    <title>{title} | pub-blog</title>
   </head>
   <body>
-    <header>
-      <nav>
-        <a href="/pub-blog/">Home</a>
-        <a href="/pub-blog/posts">Posts</a>
+    <header class="site-header">
+      <nav class="container">
+        <div class="nav-wrapper">
+          <a href="/pub-blog/" class="site-title">
+            <span class="title-icon">📰</span>
+            <span>pub-blog</span>
+          </a>
+          <ul class="nav-links">
+            <li>
+              <a href="/pub-blog/" class={currentPath === '/pub-blog/' ? 'active' : ''}>
+                Home
+              </a>
+            </li>
+            <li>
+              <a href="/pub-blog/posts/" class={currentPath.startsWith('/pub-blog/posts') ? 'active' : ''}>
+                Posts
+              </a>
+            </li>
+          </ul>
+        </div>
       </nav>
     </header>
-    <slot />
-    <footer>
-      <p>&copy; {new Date().getFullYear()} pub-blog - Automated News Aggregator</p>
+
+    <main class="site-main">
+      <div class="container">
+        <slot />
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container">
+        <div class="footer-content">
+          <p class="footer-text">
+            &copy; {new Date().getFullYear()} pub-blog • Powered by <a href="https://astro.build" target="_blank" rel="noopener">Astro</a>
+          </p>
+          <p class="footer-description">
+            Automated news aggregation for Cloud, Cybersecurity, AI, and ML technologies
+          </p>
+        </div>
+      </div>
     </footer>
+
+    <style>
+      .site-header {
+        background-color: var(--bg-secondary);
+        border-bottom: 1px solid var(--border-color);
+        padding: 1rem 0;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        backdrop-filter: blur(10px);
+      }
+
+      .nav-wrapper {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .site-title {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        text-decoration: none;
+        transition: color 0.2s ease;
+      }
+
+      .site-title:hover {
+        color: var(--link-color);
+        text-decoration: none;
+      }
+
+      .title-icon {
+        font-size: 1.75rem;
+      }
+
+      .nav-links {
+        display: flex;
+        gap: 2rem;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+
+      .nav-links a {
+        color: var(--text-secondary);
+        font-weight: 500;
+        text-decoration: none;
+        padding: 0.5rem 0;
+        border-bottom: 2px solid transparent;
+        transition: all 0.2s ease;
+      }
+
+      .nav-links a:hover,
+      .nav-links a.active {
+        color: var(--link-color);
+        border-bottom-color: var(--link-color);
+        text-decoration: none;
+      }
+
+      .site-main {
+        flex: 1;
+        padding: 3rem 0;
+        min-height: calc(100vh - 200px);
+      }
+
+      .site-footer {
+        background-color: var(--bg-secondary);
+        border-top: 1px solid var(--border-color);
+        padding: 2rem 0;
+        margin-top: 4rem;
+      }
+
+      .footer-content {
+        text-align: center;
+      }
+
+      .footer-text {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        margin-bottom: 0.5rem;
+      }
+
+      .footer-text a {
+        color: var(--link-color);
+        font-weight: 500;
+      }
+
+      .footer-description {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        margin: 0;
+      }
+
+      @media (max-width: 640px) {
+        .nav-wrapper {
+          flex-direction: column;
+          gap: 1rem;
+        }
+
+        .nav-links {
+          gap: 1rem;
+        }
+
+        .site-title {
+          font-size: 1.25rem;
+        }
+      }
+    </style>
   </body>
-</html>
-
-<style is:global>
-  :root {
-    --accent: 0ea5e9;
-    --accent-dark: 0284c7;
-    --black: 15, 18, 25;
-    --gray: 96, 115, 159;
-    --gray-light: 229, 233, 240;
-    --gray-dark: 34, 41, 57;
-    --gray-gradient: rgba(var(--gray-light), 50%), #fff;
-    --box-shadow: 0 2px 6px rgba(var(--gray), 25%), 0 8px 24px rgba(var(--gray), 33%),
-      0 16px 32px rgba(var(--gray), 33%);
-  }
-
-  * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-  }
-
-  html {
-    font-family: system-ui, sans-serif;
-    background: #f8fafc;
-    color: rgb(var(--black));
-  }
-
-  body {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-  }
-
-  header {
-    background: white;
     border-bottom: 1px solid rgb(var(--gray-light));
     padding: 1rem 2rem;
   }
