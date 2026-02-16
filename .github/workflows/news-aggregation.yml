@@ -1,0 +1,56 @@
+name: Fetch and Publish News
+
+on:
+  schedule:
+    # Run every Monday at 8 AM UTC
+    - cron: '0 8 * * 1'
+  workflow_dispatch:  # Allow manual triggers
+
+permissions:
+  contents: write
+
+jobs:
+  aggregate-news:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+      
+      - name: Run news aggregation
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          python scripts/fetch_news.py
+      
+      - name: Check for changes
+        id: verify_diff
+        run: |
+          git diff --quiet src/content/posts/ || echo "changes=true" >> $GITHUB_OUTPUT
+      
+      - name: Commit and push new posts
+        if: steps.verify_diff.outputs.changes == 'true'
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          git add src/content/posts/
+          git add src/content/errors/
+          git commit -m "📰 Auto-generated news posts - $(date +'%Y-%m-%d %H:%M UTC')"
+          git push
+      
+      - name: No new posts
+        if: steps.verify_diff.outputs.changes != 'true'
+        run: |
+          echo "No new posts generated. Either no articles matched filters or all were duplicates."
