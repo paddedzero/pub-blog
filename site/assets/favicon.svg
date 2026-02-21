@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="100" height="100" fill="none">
+    <!-- Body -->
+    <path d="M32 4
+       C24 14, 24 30, 32 44
+       C40 30, 40 14, 32 4 Z" fill="currentColor" />
+
+    <!-- Window -->
+    <circle cx="32" cy="24" r="4" fill="#ffffff" opacity="0.9" />
+
+    <!-- Fins -->
+    <path d="M24 36 L16 44 L24 44 Z" fill="currentColor" />
+    <path d="M40 36 L40 44 L48 44 Z" fill="currentColor" />
+
+    <!-- Flame -->
+    <path d="M32 44
+       C28 50, 30 56, 32 60
+       C34 56, 36 50, 32 44 Z" fill="#ff9800" />
+</svg>

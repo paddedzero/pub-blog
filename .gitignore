@@ -152,7 +152,7 @@ venv.bak/
 .ropeproject
 
 # mkdocs documentation
-/site
+# Note: /site is NOT ignored here because site/ is our Astro content directory
 
 # mypy
 .mypy_cache/
@@ -211,7 +211,7 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-package-lock.json
+# package-lock.json is committed for reproducible CI builds
 
 # Astro
 .astro/
