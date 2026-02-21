@@ -73,8 +73,14 @@ jobs:
               return posts[0] if posts else None
           def parse_post(p):
               t = p.read_text(encoding="utf-8")
-              m = re.match(r"^---\n(.*?)\n---\n?(.*)", t, re.DOTALL)
-              return (m.group(1), m.group(2)) if m else ("", t)
+              # Be tolerant of different line endings and normalize known front matter keys.
+              m = re.match(r"^---\r?\n(.*?)\r?\n---\r?\n?(.*)", t, re.DOTALL)
+              if not m:
+                  return ("", t)
+              front, body = m.group(1), m.group(2)
+              # Normalize pubDate -> date to match downstream expectations.
+              front = re.sub(r'(?m)^pubDate\s*:', 'date:', front)
+              return (front, body)
           def extract_headlines(body):
               hl = []
               in_hl = False
