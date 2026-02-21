@@ -91,7 +91,12 @@ jobs:
                   if in_hl:
                       if line.startswith("#"):
                           break
-                      m = re.search(r'<a[^>]*>([^<]+)</a>', line)
+                      # First, handle numbered bold headlines like:
+                      # "1. **Key Threat Intel & Vulnerability Stories** (14 mentions)"
+                      m = re.search(r'^\s*\d+\.\s+\*\*(.+?)\*\*', line)
+                      if not m:
+                          # Fallback to existing link-based extraction for older formats
+                          m = re.search(r'<a[^>]*>([^<]+)</a>', line)
                       if not m:
                           m = re.search(r'\[([^\]]+)\]\(', line)
                       if m:
