@@ -129,16 +129,19 @@ jobs:
                   return
               tm = re.search(r"^title:\s*(.+)$", fm, re.MULTILINE)
               title = tm.group(1).strip().strip("\"'") if tm else "Weekly News Brief"
-              AUDIO_DIR.mkdir(parents=True, exist_ok=True)
-              ap = AUDIO_DIR / (stem + ".mp3")
-              asyncio.run(gen_audio(build_script(title, hl), ap))
-              print("Audio generated: " + str(ap))
-              ph = TPL.replace("{s}", stem)
-              post.write_text(
-                  "---\n" + fm + "\n---\n" + MARKER + "\n" + ph + "\n\n" + body,
-                  encoding="utf-8"
-              )
-              print("Player injected into " + str(post))
+              try:
+                  AUDIO_DIR.mkdir(parents=True, exist_ok=True)
+                  ap = AUDIO_DIR / (stem + ".mp3")
+                  asyncio.run(gen_audio(build_script(title, hl), ap))
+                  print("Audio generated: " + str(ap))
+                  ph = TPL.replace("{s}", stem)
+                  post.write_text(
+                      "---\n" + fm + "\n---\n" + MARKER + "\n" + ph + "\n\n" + body,
+                      encoding="utf-8"
+                  )
+                  print("Player injected into " + str(post))
+              except Exception as e:
+                  print("Error during TTS generation or player injection: " + str(e))
           main()
           PYEOF
       - name: Setup Pages
