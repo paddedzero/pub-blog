@@ -46,7 +46,7 @@ const sortedTags = Object.entries(tagCounts)
 ---
 
 <Layout title="Blog" description={SITE.blogDescription} schema={schema}>
-  <Breadcrumbs items={[{ name: 'Blog', href: '/posts' }]} />
+  <Breadcrumbs items={[{ name: 'Blog', href: 'posts' }]} />
 
   <div class="mb-10 sm:mb-12">
     <h1
@@ -99,7 +99,7 @@ const sortedTags = Object.entries(tagCounts)
             {
               sortedTags.map(([tag, count]) => (
                 <a
-                  href={`/posts/tag/${tag}`}
+                  href={`posts/tag/${tag}`}
                   class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-background border border-border hover:bg-accent hover:border-primary/50 transition-all no-underline group"
                 >
                   <span class="text-foreground group-hover:text-primary transition-colors">
