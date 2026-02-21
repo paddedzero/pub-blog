@@ -4,7 +4,7 @@ import satori from 'satori';
 import { html } from 'satori-html';
 import { Resvg } from '@resvg/resvg-js';
 import { SITE } from '@/config';
-import { getPublishedPosts, getPostSlug } from '@/lib/utils/posts';
+import { getPublishedPosts, getPostSlug, getPublishedNewsfeed, getNewsfeedSlug } from '@/lib/utils/posts';
 
 // Fetch font once at module load time (cached across all OG image builds)
 const fontDataPromise = fetch(
@@ -13,10 +13,17 @@ const fontDataPromise = fetch(
 
 export async function getStaticPaths() {
   const posts = await getPublishedPosts();
-  return posts.map((post: CollectionEntry<'posts'>) => ({
-    params: { slug: getPostSlug(post) },
-    props: { post },
-  }));
+  const newsfeed = await getPublishedNewsfeed();
+  return [
+    ...posts.map((post: CollectionEntry<'posts'>) => ({
+      params: { slug: getPostSlug(post) },
+      props: { post },
+    })),
+    ...newsfeed.map((post: CollectionEntry<'newsfeed'>) => ({
+      params: { slug: getNewsfeedSlug(post) },
+      props: { post },
+    })),
+  ];
 }
 
 export const GET: APIRoute = async ({ props }) => {

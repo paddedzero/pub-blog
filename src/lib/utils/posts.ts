@@ -41,3 +41,31 @@ export function getPostSlug(post: CollectionEntry<'posts'>): string {
 
   return post.id;
 }
+
+/**
+ * Get published newsfeed entries, filtering out drafts and future-dated posts.
+ */
+export async function getPublishedNewsfeed(): Promise<CollectionEntry<'newsfeed'>[]> {
+  const posts = await getCollection('newsfeed');
+
+  if (import.meta.env.DEV) {
+    return posts;
+  }
+
+  const now = new Date();
+  return posts.filter((post: CollectionEntry<'newsfeed'>) => {
+    if (post.data.draft) return false;
+    if (post.data.pubDate > now) return false;
+    return true;
+  });
+}
+
+/**
+ * Get the effective slug for a newsfeed entry.
+ */
+export function getNewsfeedSlug(post: CollectionEntry<'newsfeed'>): string {
+  if (post.data.slug) {
+    return post.data.slug;
+  }
+  return post.id;
+}
