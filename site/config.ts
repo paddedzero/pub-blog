@@ -46,7 +46,7 @@ export const SITE: SiteConfig = {
   title: 'pub-blog',
   ogImage: 'og.png',
   lang: 'en-US',
-  base: '/pub-blog',
+  base: '/pub-blog/',
   website: 'https://paddedzero.github.io/pub-blog',
   social: {
     github: 'https://github.com/paddedzero',
