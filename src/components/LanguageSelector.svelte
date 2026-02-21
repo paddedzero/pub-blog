@@ -12,7 +12,7 @@
   </span>
   {#each Object.entries(translations) as [lang, slug] (lang)}
     <a
-      href={`/posts/${slug}`}
+      href={`posts/${slug}`}
       class="inline-flex items-center gap-1.5 px-2 py-1 round text-xs font-bold uppercase tracking-wide bg-background text-foreground hover:text-primary border border-border transition-colors no-underline"
     >
       <span class="text-sm leading-none">{getLangFlag(lang)}</span>
