@@ -3,7 +3,7 @@ import Layout from '@/layouts/Layout.astro';
 import { render, type CollectionEntry } from 'astro:content';
 import { formatDate } from '@/lib/utils/date';
 import TableOfContents from '@/components/TableOfContents.svelte';
-import { getPublishedPosts, getPostSlug } from '@/lib/utils/posts';
+import { getPublishedPosts, getPostSlug, getPublishedNewsfeed, getNewsfeedSlug } from '@/lib/utils/posts';
 
 import Breadcrumbs from '@/components/Breadcrumbs.svelte';
 import SocialShare from '@/components/SocialShare.svelte';
@@ -15,18 +15,29 @@ import { getBlogPostingSchema, getBreadcrumbSchema } from '@/lib/schemas';
 
 export async function getStaticPaths() {
   const posts = await getPublishedPosts();
-  return posts.map((post: CollectionEntry<'posts'>) => ({
-    params: { slug: getPostSlug(post) },
-    props: post,
-  }));
+  const newsfeed = await getPublishedNewsfeed();
+  return [
+    ...posts.map((post: CollectionEntry<'posts'>) => ({
+      params: { slug: getPostSlug(post) },
+      props: post,
+    })),
+    ...newsfeed.map((post: CollectionEntry<'newsfeed'>) => ({
+      params: { slug: getNewsfeedSlug(post) },
+      props: post,
+    })),
+  ];
 }
 
-type Props = CollectionEntry<'posts'>;
+type Props = CollectionEntry<'posts'> | CollectionEntry<'newsfeed'>;
 
 const post = Astro.props as Props;
-const { Content, headings } = await render(post);
+// render() accepts any collection entry; cast to posts for compatibility
+const { Content, headings } = await render(post as CollectionEntry<'posts'>);
 
-const effectiveSlug = getPostSlug(post);
+const effectiveSlug =
+  post.collection === 'newsfeed'
+    ? getNewsfeedSlug(post as CollectionEntry<'newsfeed'>)
+    : getPostSlug(post as CollectionEntry<'posts'>);
 
 const schemas = [
   getBlogPostingSchema({

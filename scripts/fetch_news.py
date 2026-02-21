@@ -39,7 +39,7 @@ YELLOW = "\033[33m"
 GREY = "\033[90m"
 
 CONFIG_FILE = "scripts/config.yaml"
-POSTS_DIR = Path("site/content/posts")
+POSTS_DIR = Path("site/content/newsfeed")
 ERRORS_DIR = Path("site/content/errors")
 
 # Use America/New_York as the local timezone
