@@ -86,6 +86,8 @@ const appearances = defineCollection({
     title: z.string(),
     event: z.string(),
     date: z.date(),
+    post_type: z.enum(['opinion', 'weekly-scan']).optional(),
+    toc_categories: z.array(z.string()).optional(),
     type: z.enum(['talk', 'podcast', 'article', 'workshop', 'video']),
     media: z.enum(['video', 'audio', 'text']).optional(),
     link: z.string().url(),
