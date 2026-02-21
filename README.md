@@ -1,24 +1,24 @@
 # pub-blog
 
-An automated news aggregator with TTS audio player — powered by [feedmeup](https://github.com/paddedzero/feedmeup).
+An automated An Astro-based automated news aggregator with TTS audio player — powered by [feedmeup](https://github.com/paddedzero/feedmeup).
 
 ## How It Works
 
-1. **Weekly News Fetch** — The `deploy.yml` workflow runs on a schedule, fetches RSS feeds, filters by keywords, deduplicates stories, and generates a Jekyll Markdown post in `_posts/`.
-2. **TTS Audio Generation** — In the same workflow, immediately after the news post is created, an inline Python script uses [edge-tts](https://github.com/rany2/edge-tts) (Microsoft neural voices, free, no API key) to synthesize the top headlines into an MP3.
-3. **Mini Audio Player** — The script injects a self-contained, podcast-like HTML/CSS/JS player at the top of the post before GitHub Pages builds and deploys the site. No layout changes or Jekyll plugins required.
+1. **Weekly News Fetch** — The `news-aggregation.yml` workflow runs on a schedule, runs `scripts/fetch_news.py` to fetch RSS feeds, filter by keywords, deduplicate stories, and generate a Markdown post in `site/content/newsfeed/`.
+2. **TTS Audio Generation** — The `deploy.yml` workflow, before building the Astro site, uses [edge-tts](https://github.com/rany2/edge-tts) (Microsoft neural voices, free, no API key) to synthesize the top trending stories into an MP3 saved to `site/public/assets/audio/`.
+3. **Mini Audio Player** — The script injects a self-contained, podcast-like HTML/CSS/JS player at the top of the Markdown post before the Astro build runs. No layout changes or component changes required.
 
 ## Features
 
 - ✅ Fully automated weekly pipeline
 - ✅ TTS audio with Microsoft Edge neural voice (`en-US-AriaNeural`)
-- ✅ Inline mini player: play/pause, seek bar, live time display
+- ✅ Inline mini player: play/pause, seek bar, live time display, ARIA accessibility
 - ✅ Idempotent — re-running the workflow skips posts that already have a player
 - ✅ Zero API keys required
 
 ## Audio Player Preview
 
-The player appears at the top of every news brief post:
+The player appears at the top of every weekly-scan post:
 
 ```
 ┌─────────────────────────────────────────────┐
@@ -33,11 +33,12 @@ The player appears at the top of every news brief post:
 # Install Python deps
 pip install -r requirements.txt
 
-# Run the news fetch locally (outputs to _posts/)
+# Run the news fetch locally (outputs to site/content/newsfeed/) locally (outputs to _posts/)
 python scripts/fetch_news.py
 
-# Preview the Jekyll site
-bundle exec jekyll serve
+# Install Node deps and preview the Astro site
+npm install
+npm run dev
 ```
 
 ## Configuration
