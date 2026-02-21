@@ -144,6 +144,8 @@ jobs:
                   print("Error during TTS generation or player injection: " + str(e))
           main()
           PYEOF
+      - name: Rebuild site after TTS
+        run: npm run build
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
