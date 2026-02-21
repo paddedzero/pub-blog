@@ -15,7 +15,7 @@ from datetime import datetime
 
 # Configuration
 GITHUB_API_URL = "https://api.github.com/repos/paddedzero/feedmeup/contents/_posts"
-OUTPUT_DIR = Path("src/content/posts")
+OUTPUT_DIR = Path("site/content/posts")
 
 def convert_front_matter(jekyll_content):
     """Convert Jekyll front matter to Astro format."""

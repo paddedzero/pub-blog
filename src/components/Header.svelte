@@ -1,0 +1,52 @@
+<script lang="ts">
+  import { SITE } from '@/config';
+  import ThemeToggle from './ThemeToggle.svelte';
+  import Search from './Search.svelte';
+
+  interface NavLink {
+    name: string;
+    href: string;
+  }
+
+  const navLinks: NavLink[] = [
+    { name: 'Posts', href: '/posts' },
+    { name: 'Projects', href: '/projects' },
+    { name: 'Appearances', href: '/appearances' },
+    { name: 'About', href: '/about' },
+  ];
+</script>
+
+<header
+  class="sticky top-0 z-50 backdrop-blur-md bg-background/80 flex flex-col lg:flex-row items-center justify-between py-4 sm:py-5 gap-4 border-b border-border transition-all duration-300"
+>
+  <div class="flex items-center justify-between w-full lg:w-auto">
+    <a
+      href="/"
+      class="text-xl sm:text-2xl font-black tracking-normal text-foreground transition-all no-underline hover:text-primary whitespace-nowrap"
+    >
+      {SITE.title}
+    </a>
+    <div class="flex items-center gap-2 lg:hidden">
+      <Search />
+      <ThemeToggle />
+    </div>
+  </div>
+
+  <nav class="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 w-full lg:w-auto">
+    <div class="flex items-center justify-center flex-wrap gap-x-2 gap-y-2 sm:gap-4">
+      {#each navLinks as link (link.name)}
+        <a
+          href={link.href}
+          class="px-1.5 py-1 rounded-md text-xs font-bold uppercase tracking-widest text-muted-foreground hover:bg-accent hover:text-primary transition-all shrink-0"
+        >
+          {link.name}
+        </a>
+      {/each}
+    </div>
+    <div class="hidden lg:block h-4 w-px bg-border"></div>
+    <div class="hidden lg:flex items-center gap-4">
+      <Search />
+      <ThemeToggle />
+    </div>
+  </nav>
+</header>

@@ -38,15 +38,15 @@ jobs:
       - name: Check for changes
         id: verify_diff
         run: |
-          git diff --quiet src/content/posts/ || echo "changes=true" >> $GITHUB_OUTPUT
+          git diff --quiet site/content/posts/ || echo "changes=true" >> $GITHUB_OUTPUT
       
       - name: Commit and push new posts
         if: steps.verify_diff.outputs.changes == 'true'
         run: |
           git config user.name "GitHub Actions Bot"
           git config user.email "actions@github.com"
-          git add src/content/posts/
-          git add src/content/errors/
+          git add site/content/posts/
+          git add site/content/errors/
           git commit -m "📰 Auto-generated news posts - $(date +'%Y-%m-%d %H:%M UTC')"
           git push
       

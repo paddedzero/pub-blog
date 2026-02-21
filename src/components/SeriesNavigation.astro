@@ -1,0 +1,69 @@
+---
+import { getPublishedPosts, getPostSlug } from '@/lib/utils/posts';
+
+interface Props {
+  seriesId: string;
+  currentPostId: string;
+}
+
+const { seriesId, currentPostId } = Astro.props;
+
+const allPosts = await getPublishedPosts();
+const seriesPosts = allPosts
+  .filter((post) => post.data.series?.id === seriesId)
+  .sort((a, b) => (a.data.series?.order ?? 0) - (b.data.series?.order ?? 0));
+
+if (seriesPosts.length <= 1) {
+  return null;
+}
+---
+
+<div class="rounded-lg border bg-card/50 px-6 py-5 mt-8 mb-12">
+  <div
+    class="flex items-center gap-2 mb-4 text-sm font-bold text-muted-foreground uppercase tracking-widest"
+  >
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    >
+      <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
+    </svg>
+    Series
+  </div>
+
+  <ul class="space-y-3">
+    {
+      seriesPosts.map((post) => {
+        const isCurrent = post.id === currentPostId;
+        return (
+          <li>
+            {isCurrent ? (
+              <div class="flex items-start gap-3">
+                <span class="flex items-center justify-center w-6 h-6 mt-0.5 text-xs font-bold rounded-full bg-primary text-primary-foreground flex-shrink-0">
+                  {post.data.series?.order}
+                </span>
+                <span class="text-foreground font-medium">{post.data.title}</span>
+              </div>
+            ) : (
+              <a href={`/posts/${getPostSlug(post)}`} class="flex items-start gap-3 group">
+                <span class="flex items-center justify-center w-6 h-6 mt-0.5 text-xs font-bold rounded-full bg-muted text-muted-foreground ring-1 ring-border group-hover:ring-primary/50 group-hover:text-primary transition-all flex-shrink-0">
+                  {post.data.series?.order}
+                </span>
+                <span class="text-muted-foreground group-hover:text-primary transition-colors">
+                  {post.data.title}
+                </span>
+              </a>
+            )}
+          </li>
+        );
+      })
+    }
+  </ul>
+</div>

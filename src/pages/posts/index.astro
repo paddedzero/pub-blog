@@ -1,116 +1,117 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getCollection } from 'astro:content';
+import Layout from '@/layouts/Layout.astro';
+import PostCard from '@/components/PostCard.svelte';
+import Breadcrumbs from '@/components/Breadcrumbs.svelte';
+import { getReadTime } from '@/lib/utils/readTime';
+import { getPublishedPosts, getPostSlug } from '@/lib/utils/posts';
+import { SITE } from '@/config';
+import { getBreadcrumbSchema } from '@/lib/schemas';
 
-const allPosts = await getCollection('posts');
-const sortedPosts = allPosts.sort((a, b) => 
-  b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
+const schema = getBreadcrumbSchema([
+  { name: 'Blog', url: new URL('/posts', Astro.site).toString() },
+]);
+
+const posts = (await getPublishedPosts()).sort(
+  (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
 );
+
+// Group posts by year
+const groupedPosts = posts.reduce(
+  (acc, post) => {
+    const year = post.data.pubDate.getFullYear().toString();
+    if (!acc[year]) acc[year] = [];
+    acc[year].push(post);
+    return acc;
+  },
+  {} as Record<string, typeof posts>
+);
+
+const years = Object.keys(groupedPosts).sort((a, b) => b.localeCompare(a));
+
+// Get all tags with counts
+const tagCounts = posts.reduce(
+  (acc, post) => {
+    post.data.tags?.forEach((tag) => {
+      acc[tag] = (acc[tag] || 0) + 1;
+    });
+    return acc;
+  },
+  {} as Record<string, number>
+);
+
+// Sort tags by count (descending)
+const sortedTags = Object.entries(tagCounts)
+  .sort(([, a], [, b]) => b - a)
+  .slice(0, 20); // Top 20 tags
 ---
 
-<BaseLayout title="All Posts - pub-blog">
-  <main>
-    <h1>All Posts</h1>
-    <div class="posts-list">
-      {sortedPosts.map((post) => (
-        <article class="post-card">
-          <h2>
-            <a href={`/pub-blog/posts/${post.slug}/`}>
-              {post.data.title}
-            </a>
-          </h2>
-          <time datetime={post.data.pubDate.toISOString()}>
-            {post.data.pubDate.toLocaleDateString('en-us', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-            })}
-          </time>
-          {post.data.description && <p>{post.data.description}</p>}
-          {post.data.categories.length > 0 && (
-            <div class="categories">
-              {post.data.categories.map((cat) => (
-                <span class="category-badge">{cat}</span>
-              ))}
-            </div>
-          )}
-        </article>
-      ))}
+<Layout title="Blog" description={SITE.blogDescription} schema={schema}>
+  <Breadcrumbs items={[{ name: 'Blog', href: '/posts' }]} />
+
+  <div class="mb-10 sm:mb-12">
+    <h1
+      class="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-foreground leading-[1.1]"
+    >
+      Writing
+    </h1>
+    <p class="mt-3 text-base sm:text-lg text-muted-foreground max-w-2xl leading-relaxed">
+      {SITE.blogDescription}
+    </p>
+  </div>
+
+  <div class="flex flex-col lg:flex-row gap-10 lg:gap-12">
+    <!-- Main Content: Posts -->
+    <div class="flex-1 min-w-0">
+      <div class="flex flex-col gap-12 lg:gap-14">
+        {
+          years.map((year) => (
+            <section class="flex flex-col gap-6">
+              <div class="flex items-center gap-6">
+                <h2 class="text-xs font-black uppercase tracking-[0.25em] text-muted-foreground opacity-80 shrink-0">
+                  {year}
+                </h2>
+                <div class="h-px flex-1 bg-border opacity-60" />
+              </div>
+              <div class="flex flex-col gap-3 sm:gap-4">
+                {groupedPosts[year].map((post) => (
+                  <PostCard
+                    {post}
+                    slug={getPostSlug(post)}
+                    readTime={getReadTime(post.body || '')}
+                  />
+                ))}
+              </div>
+            </section>
+          ))
+        }
+      </div>
     </div>
-  </main>
-</BaseLayout>
 
-<style>
-  main {
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 2rem 1rem;
-  }
-
-  h1 {
-    font-size: 2.5rem;
-    margin-bottom: 2rem;
-    color: #0f172a;
-  }
-
-  .posts-list {
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
-  }
-
-  .post-card {
-    background: white;
-    padding: 1.5rem;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    transition: transform 0.2s, box-shadow 0.2s;
-  }
-
-  .post-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  }
-
-  .post-card h2 {
-    margin-bottom: 0.5rem;
-    font-size: 1.5rem;
-  }
-
-  .post-card h2 a {
-    color: #0f172a;
-    text-decoration: none;
-  }
-
-  .post-card h2 a:hover {
-    color: #0ea5e9;
-  }
-
-  time {
-    color: #64748b;
-    font-size: 0.875rem;
-    display: block;
-    margin-bottom: 0.75rem;
-  }
-
-  .post-card p {
-    color: #475569;
-    line-height: 1.6;
-    margin-bottom: 1rem;
-  }
-
-  .categories {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-  }
-
-  .category-badge {
-    background: #e0f2fe;
-    color: #0369a1;
-    padding: 0.25rem 0.75rem;
-    border-radius: 999px;
-    font-size: 0.75rem;
-    font-weight: 600;
-  }
-</style>
+    <!-- Sidebar: Tags -->
+    <aside class="lg:w-64 flex-shrink-0">
+      <div class="lg:sticky lg:top-24">
+        <!-- Tags Cloud -->
+        <div class="p-5 rounded-xl bg-secondary/30 border border-border/50">
+          <h3 class="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">
+            Popular Topics
+          </h3>
+          <div class="flex flex-wrap gap-2">
+            {
+              sortedTags.map(([tag, count]) => (
+                <a
+                  href={`/posts/tag/${tag}`}
+                  class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-background border border-border hover:bg-accent hover:border-primary/50 transition-all no-underline group"
+                >
+                  <span class="text-foreground group-hover:text-primary transition-colors">
+                    {tag}
+                  </span>
+                  <span class="text-muted-foreground text-xs">({count})</span>
+                </a>
+              ))
+            }
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</Layout>

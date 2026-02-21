@@ -1,0 +1,171 @@
+---
+import '@/styles/global.css';
+import { SITE } from '@/config';
+import Header from '@/components/Header.astro';
+import Footer from '@/components/Footer.astro';
+import SearchModal from '@/components/SearchModal.svelte';
+import { ClientRouter } from 'astro:transitions';
+import JsonLd from '@/components/JsonLd.astro';
+import { getWebSiteSchema, getOrganizationSchema, getPersonSchema } from '@/lib/schemas';
+
+// Preload fonts to break critical request chains
+import outfitFont400 from '@fontsource/outfit/files/outfit-latin-400-normal.woff2?url';
+import outfitFont700 from '@fontsource/outfit/files/outfit-latin-700-normal.woff2?url';
+import interFontVar from '@fontsource-variable/inter/files/inter-latin-standard-normal.woff2?url';
+
+interface Props {
+  title?: string;
+  description?: string;
+  ogImage?: string;
+  lang?: string;
+  schema?: Record<string, unknown> | Record<string, unknown>[];
+}
+
+const { title, description, ogImage, lang, schema } = Astro.props;
+const pageLang = lang || SITE.lang;
+const pageTitle = title ? `${title} | ${SITE.title}` : SITE.title;
+const pageDescription = description || SITE.desc;
+const pageOgImage = new URL(ogImage || SITE.ogImage, Astro.site);
+
+const defaultSchemas = [
+  getWebSiteSchema(new URL(Astro.url.pathname, Astro.site).toString()),
+  getOrganizationSchema(),
+  getPersonSchema(),
+];
+
+const finalSchema = schema
+  ? Array.isArray(schema)
+    ? [...defaultSchemas, ...schema]
+    : [...defaultSchemas, schema]
+  : defaultSchemas;
+
+const analyticsId = SITE.googleAnalyticsId;
+const isGTM = analyticsId?.startsWith('GTM-');
+
+const gtmScript = `
+  (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+  })(window,document,'script','dataLayer','${analyticsId}');
+`;
+
+const gaScript = `
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', '${analyticsId}');
+`;
+---
+
+<html lang={pageLang}>
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+    <link rel="preload" href={outfitFont400} as="font" type="font/woff2" crossorigin="anonymous" />
+    <link rel="preload" href={outfitFont700} as="font" type="font/woff2" crossorigin="anonymous" />
+    <link rel="preload" href={interFontVar} as="font" type="font/woff2" crossorigin="anonymous" />
+
+    {analyticsId && <link rel="preconnect" href="https://www.googletagmanager.com" />}
+    <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+
+    <title>{pageTitle}</title>
+    <meta name="description" content={pageDescription} />
+
+    <!-- SEO -->
+    <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site)} />
+    <meta name="robots" content="index, follow" />
+    <meta name="author" content={SITE.author} />
+    <meta name="theme-color" content="#09090b" />
+
+    <!-- RSS Feed -->
+    <link
+      rel="alternate"
+      type="application/rss+xml"
+      title={`${SITE.title} RSS Feed`}
+      href="/rss.xml"
+    />
+
+    <!-- Theme Initialization -->
+    <script is:inline>
+      (function () {
+        const getThemePreference = () => {
+          if (typeof localStorage !== 'undefined' && localStorage.getItem('theme')) {
+            return localStorage.getItem('theme');
+          }
+          return 'system';
+        };
+
+        const setDarkClass = () => {
+          const checkDark = (theme) => {
+            if (theme === 'system') {
+              return window.matchMedia('(prefers-color-scheme: dark)').matches;
+            }
+            return theme === 'dark';
+          };
+
+          const isDark = checkDark(getThemePreference());
+          const contains = document.documentElement.classList.contains('dark');
+          if (isDark && !contains) {
+            document.documentElement.classList.add('dark');
+          } else if (!isDark && contains) {
+            document.documentElement.classList.remove('dark');
+          }
+        };
+
+        setDarkClass();
+        document.addEventListener('astro:after-swap', setDarkClass);
+      })();
+    </script>
+
+    <!-- Open Graph -->
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={pageDescription} />
+    <meta property="og:image" content={pageOgImage} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={new URL(Astro.url.pathname, Astro.site)} />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={pageDescription} />
+    <meta name="twitter:image" content={pageOgImage} />
+
+    {
+      analyticsId && (
+        <script type="text/partytown" is:inline set:html={isGTM ? gtmScript : gaScript} />
+      )
+    }
+
+    <JsonLd schema={finalSchema} />
+
+    <ClientRouter fallback="swap" />
+    <base href={SITE.base} />
+  </head>
+  <body class="bg-background text-foreground min-h-screen">
+    {
+      isGTM && (
+        <noscript>
+          <iframe
+            src={`https://www.googletagmanager.com/ns.html?id=${analyticsId}`}
+            height="0"
+            width="0"
+            style="display:none;visibility:hidden"
+          />
+        </noscript>
+      )
+    }
+    <div class="max-w-5xl 3xl:max-w-7xl mx-auto container-padding">
+      <Header />
+      <main class="py-12 sm:py-16 lg:py-24">
+        <slot />
+      </main>
+      <Footer />
+      <SearchModal client:idle />
+    </div>
+  </body>
+</html>
