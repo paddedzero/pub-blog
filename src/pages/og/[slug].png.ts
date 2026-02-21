@@ -6,6 +6,11 @@ import { Resvg } from '@resvg/resvg-js';
 import { SITE } from '@/config';
 import { getPublishedPosts, getPostSlug } from '@/lib/utils/posts';
 
+// Fetch font once at module load time (cached across all OG image builds)
+const fontDataPromise = fetch(
+  'https://cdn.jsdelivr.net/fontsource/fonts/inter@5.0.19/latin-700-normal.woff'
+).then((res) => res.arrayBuffer());
+
 export async function getStaticPaths() {
   const posts = await getPublishedPosts();
   return posts.map((post: CollectionEntry<'posts'>) => ({
@@ -17,10 +22,8 @@ export async function getStaticPaths() {
 export const GET: APIRoute = async ({ props }) => {
   const { post } = props;
 
-  // Minimal buffer fetch for a font (Inter Bold)
-  const fontData = await fetch(
-    'https://cdn.jsdelivr.net/fontsource/fonts/inter@5.0.19/latin-700-normal.woff'
-  ).then((res) => res.arrayBuffer());
+  // Reuse cached font data
+  const fontData = await fontDataPromise;
 
   const markup = html`
     <div
