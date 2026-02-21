@@ -1,6 +1,6 @@
 # pub-blog
 
-A Jekyll-based automated news aggregator with TTS audio player — powered by [feedmeup](https://github.com/paddedzero/feedmeup).
+An automated news aggregator with TTS audio player — powered by [feedmeup](https://github.com/paddedzero/feedmeup).
 
 ## How It Works
 
