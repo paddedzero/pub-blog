@@ -34,7 +34,7 @@ The player appears at the top of every news brief post:
 pip install -r requirements.txt
 
 # Run the news fetch locally (outputs to _posts/)
-python fetch_news.py
+python scripts/fetch_news.py
 
 # Preview the Jekyll site
 bundle exec jekyll serve
