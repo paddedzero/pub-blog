@@ -26,7 +26,14 @@ const navLinks: NavLink[] = [
       href={base}
       class="flex flex-col items-center no-underline hover:opacity-80 transition-opacity gap-1"
     >
-      <img src={`${base}site-icon.png`} alt="Site logo" class="w-12 h-12 rounded-full" />
+      <img
+        src={`${base}site-icon.png`}
+        alt=""
+        aria-hidden="true"
+        width="48"
+        height="48"
+        class="w-12 h-12 rounded-full"
+      />
       <span class="text-sm font-black tracking-normal text-foreground whitespace-nowrap">{SITE.title}</span>
     </a>
     <div class="flex items-center gap-2 lg:hidden">
