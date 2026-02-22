@@ -720,15 +720,21 @@ aiGenerated: true
 
     # HTML Table for Article Summary
     table = """<div class="not-prose my-8 overflow-hidden rounded-xl border border-border bg-secondary/20 text-card-foreground shadow-lg">
-  <div class="bg-secondary/40 px-6 py-4 border-b border-border flex items-center gap-2">
-    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
-    <h3 class="font-semibold text-lg">Scan Overview</h3>
-  </div>
   <table class="w-full text-sm text-left">
-    <thead class="bg-secondary/30 text-muted-foreground">
+    <thead class="bg-secondary/40 border-b border-border">
       <tr>
-        <th class="px-6 py-3 font-medium border-b border-border">Category</th>
-        <th class="px-6 py-3 font-medium border-b border-border text-right">Article Count</th>
+        <th class="px-6 py-3 font-semibold text-foreground">
+          <span class="flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><path d="M7 7h.01"/></svg>
+            Category
+          </span>
+        </th>
+        <th class="px-6 py-3 font-semibold text-foreground text-right">
+          <span class="flex items-center justify-end gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+            Article Count
+          </span>
+        </th>
       </tr>
     </thead>
     <tbody class="divide-y divide-border">
@@ -747,7 +753,7 @@ aiGenerated: true
     table += f"""    </tbody>
     <tfoot class="bg-secondary/40 font-semibold border-t-2 border-border">
       <tr>
-        <td class="px-6 py-4">Total Articles Scanned</td>
+        <td class="px-6 py-4 text-foreground">Total Articles Scanned</td>
         <td class="px-6 py-4 text-right text-primary">{total_articles}</td>
       </tr>
     </tfoot>
@@ -1363,15 +1369,21 @@ showComments: false
 
     # HTML Table for Article Summary
     table = """<div class="not-prose my-8 overflow-hidden rounded-xl border border-border bg-secondary/20 text-card-foreground shadow-lg">
-  <div class="bg-secondary/40 px-6 py-4 border-b border-border flex items-center gap-2">
-    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
-    <h3 class="font-semibold text-lg">Scan Overview</h3>
-  </div>
   <table class="w-full text-sm text-left">
-    <thead class="bg-secondary/30 text-muted-foreground">
+    <thead class="bg-secondary/40 border-b border-border">
       <tr>
-        <th class="px-6 py-3 font-medium border-b border-border">Category</th>
-        <th class="px-6 py-3 font-medium border-b border-border text-right">Article Count</th>
+        <th class="px-6 py-3 font-semibold text-foreground">
+          <span class="flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><path d="M7 7h.01"/></svg>
+            Category
+          </span>
+        </th>
+        <th class="px-6 py-3 font-semibold text-foreground text-right">
+          <span class="flex items-center justify-end gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+            Article Count
+          </span>
+        </th>
       </tr>
     </thead>
     <tbody class="divide-y divide-border">
@@ -1380,7 +1392,7 @@ showComments: false
     for category, entries_text in sorted(content_by_category.items()):
         # The new dense HTML structure relies on <details> tags, so count those instead of - **
         article_count = entries_text.count("<details")
-        table += f"""      <tr class="hover:bg-muted/30 transition-colors">
+        table += f"""      <tr class="hover:bg-secondary/30 transition-colors">
         <td class="px-6 py-3 font-medium">{category}</td>
         <td class="px-6 py-3 text-right text-muted-foreground">{article_count}</td>
       </tr>
@@ -1388,9 +1400,9 @@ showComments: false
         total_articles += article_count
 
     table += f"""    </tbody>
-    <tfoot class="bg-muted/50 font-semibold border-t-2 border-border">
+    <tfoot class="bg-secondary/40 font-semibold border-t-2 border-border">
       <tr>
-        <td class="px-6 py-4">Total Articles Scanned</td>
+        <td class="px-6 py-4 text-foreground">Total Articles Scanned</td>
         <td class="px-6 py-4 text-right text-primary">{total_articles}</td>
       </tr>
     </tfoot>
