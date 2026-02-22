@@ -163,8 +163,8 @@
 /* Fluid Typography & Scaling */
 html {
   color-scheme: light;
-  /* Base font size scales between 16px on mobile and 18px on 4K */
-  font-size: clamp(16px, 0.5vw + 14px, 20px);
+  /* Base font size scales between 15px on mobile and 18px on 4K */
+  font-size: clamp(15px, 0.3vw + 14px, 17px);
 }
 
 html.dark {
@@ -273,8 +273,8 @@ input::placeholder {
   --tw-prose-pre-bg: #f8fafc;
   /* Subtle off-white for light mode */
 
-  font-size: 1.05rem;
-  line-height: 1.75;
+  font-size: 1rem;
+  line-height: 1.7;
 }
 
 /* Inline code styling */
