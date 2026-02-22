@@ -16,7 +16,7 @@
     }
     if (href.startsWith(base)) return href;
     if (href.startsWith('/')) return `${base}${href.replace(/^\/+/, '')}`;
-    return href;
+    return `${base}${href.replace(/^\/+/, '')}`;
   };
 </script>
 
