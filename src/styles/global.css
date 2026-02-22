@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 @plugin "@tailwindcss/typography";
+@source "../../site";
 
 /* Initial typography improvements to reduce chains */
 @font-face {
@@ -366,4 +367,31 @@ h6:hover .heading-link {
 
 .heading-link:hover {
   color: var(--color-primary);
+}
+
+/* Hardcoded high-contrast button styling to bypass Tailwind JIT purging inside markdown */
+.read-more-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+  transition: all 0.2s ease;
+  background-color: var(--color-secondary);
+  color: var(--color-secondary-foreground) !important;
+  border: 1px solid var(--color-border);
+  height: 2.25rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  text-decoration: none !important;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.read-more-btn:hover {
+  background-color: var(--color-border);
+  color: var(--color-foreground) !important;
 }

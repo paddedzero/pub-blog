@@ -657,7 +657,7 @@ def format_entries_for_category(entries):
   </summary>
   <div class="p-4 border-t border-border">
     <p class="text-muted-foreground mb-4 text-sm md:text-base leading-relaxed">{summary}</p>
-    {"<a href='" + safe_link + "' target='_blank' rel='noopener noreferrer' class='inline-flex items-center justify-center rounded-md text-sm font-bold tracking-wide transition-colors bg-primary !text-primary-foreground hover:bg-primary/90 hover:!text-primary-foreground h-9 px-4 py-2 no-underline shadow-sm mt-2'>Read Full Article →</a>" if safe_link else ""}
+    {"<a href='" + safe_link + "' target='_blank' rel='noopener noreferrer' class="read-more-btn">Read Full Article →</a>" if safe_link else ""}
   </div>
 </details>
 """
