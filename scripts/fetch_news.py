@@ -648,16 +648,26 @@ def format_entries_for_category(entries):
             summary = summary[:297] + "..."
             
         safe_link = get_verified_link(title, link)
+        link_html = f"<a href='{safe_link}' target='_blank' rel='noopener noreferrer' class=\"read-more-btn\">Read Full Article →</a>" if safe_link else "<p class=\"text-muted-foreground italic\">Read more (link unavailable)</p>"
+        similar_html = f"<span class='text-xs font-normal text-muted-foreground ml-2 px-2 py-0.5 bg-muted rounded-full'>+ {len(group)-1} similar</span>" if len(group)>1 else ""
         
+        # For the dense preview snippet, extract the first sentence or 70 characters
+        snippet = summary.split('.')[0] if '.' in summary else summary
+        if len(snippet) > 80:
+            snippet = snippet[:77] + "..."
+            
         md_block = f"""
-<details class="mb-4 group border border-border rounded-lg overflow-hidden transition-all duration-200 bg-card">
-  <summary class="font-bold cursor-pointer bg-secondary/30 hover:bg-secondary/70 p-4 transition-colors list-none flex items-start justify-between gap-4">
-    <span class="text-foreground leading-snug">{title} {f"<span class='text-xs font-normal text-muted-foreground ml-2 px-2 py-0.5 bg-muted rounded-full'>{'+ ' + str(len(group)-1) + ' similar' if len(group)>1 else ''}</span>" if len(group)>1 else ''}</span>
-    <span class="text-muted-foreground text-sm group-open:rotate-180 transition-transform duration-300 mt-1">▼</span>
+<details class="group border-b border-border/50 py-1">
+  <summary class="cursor-pointer hover:bg-secondary/30 transition-colors list-none flex items-center justify-between py-1.5 px-2">
+    <div class="flex-1 flex flex-col md:flex-row md:items-center gap-1 md:gap-3 overflow-hidden mr-4">
+      <span class="text-sm font-medium text-foreground whitespace-nowrap overflow-hidden text-ellipsis md:max-w-[50%]">{title} {similar_html}</span>
+      <span class="text-xs text-muted-foreground whitespace-nowrap overflow-hidden text-ellipsis flex-1">{snippet}</span>
+    </div>
+    <span class="text-muted-foreground text-xs shrink-0 group-open:rotate-180 transition-transform">▼</span>
   </summary>
-  <div class="p-4 border-t border-border">
-    <p class="text-muted-foreground mb-4 text-sm md:text-base leading-relaxed">{summary}</p>
-    {"<a href='" + safe_link + "' target='_blank' rel='noopener noreferrer' class=\"read-more-btn\">Read Full Article →</a>" if safe_link else ""}
+  <div class="p-3 bg-secondary/10 rounded-md mt-1 mb-2 text-sm mx-2">
+    <p class="text-muted-foreground mb-3 leading-relaxed">{summary}</p>
+    {link_html}
   </div>
 </details>
 """
