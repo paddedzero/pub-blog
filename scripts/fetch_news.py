@@ -1267,16 +1267,24 @@ showComments: false
     if threat_intel_vuln:
         top_threats = sorted(threat_intel_vuln, key=lambda x: x[1], reverse=True)[:3]
         
-        highlights_section += f"{item_num}. **Key Threat Intel & Vulnerability Stories** ({sum(c for e, c in threat_intel_vuln)} mentions)\n"
-        highlights_section += "   > This week's critical security updates and vulnerability disclosures:\n"
+        highlights_section += f"<details class=\"mb-4 group border border-border rounded-lg overflow-hidden\">\n"
+        highlights_section += f"  <summary class=\"font-bold cursor-pointer bg-secondary/50 p-3 hover:bg-secondary transition-colors list-none flex items-center justify-between\">\n"
+        highlights_section += f"    <span class=\"text-foreground\">{item_num}. Key Threat Intel & Vulnerability Stories ({sum(c for e, c in threat_intel_vuln)} mentions)</span>\n"
+        highlights_section += f"    <span class=\"text-muted-foreground text-sm group-open:rotate-180 transition-transform\">▼</span>\n"
+        highlights_section += f"  </summary>\n"
+        highlights_section += f"  <div class=\"p-4 bg-background\">\n"
+        highlights_section += f"    <p class=\"text-muted-foreground mb-4\">This week's critical security updates and vulnerability disclosures:</p>\n"
+        highlights_section += f"    <ul class=\"list-disc pl-5 mb-4 text-muted-foreground\">\n"
         for entry, count in top_threats:
             title = entry.get("title", "No Title")
             link = get_verified_link(title, entry.get("link", ""))
             if link:
-                highlights_section += f"   > • [{title}]({link}) ({count} mentions)\n"
+                highlights_section += f"      <li><a href=\"{link}\" class=\"text-primary hover:underline\">{title}</a> ({count} mentions)</li>\n"
             else:
-                highlights_section += f"   > • {title} ({count} mentions)\n"
-        highlights_section += "\n"
+                highlights_section += f"      <li>{title} ({count} mentions)</li>\n"
+        highlights_section += f"    </ul>\n"
+        highlights_section += f"  </div>\n"
+        highlights_section += f"</details>\n\n"
         item_num += 1
     
     # Then add other trending stories
@@ -1287,12 +1295,19 @@ showComments: false
             summary = summary[:247] + "..."
         
         safe_link = get_verified_link(title, entry.get("link", ""))
-        highlights_section += f"{item_num}. **{title}** ({count} mentions)\n"
-        highlights_section += f"   > {summary}\n"
+        highlights_section += f"<details class=\"mb-4 group border border-border rounded-lg overflow-hidden\">\n"
+        highlights_section += f"  <summary class=\"font-bold cursor-pointer bg-secondary/50 p-3 hover:bg-secondary transition-colors list-none flex items-center justify-between\">\n"
+        highlights_section += f"    <span class=\"text-foreground\">{item_num}. {title} ({count} mentions)</span>\n"
+        highlights_section += f"    <span class=\"text-muted-foreground text-sm group-open:rotate-180 transition-transform\">▼</span>\n"
+        highlights_section += f"  </summary>\n"
+        highlights_section += f"  <div class=\"p-4 bg-background\">\n"
+        highlights_section += f"    <p class=\"text-muted-foreground mb-4\">{summary}</p>\n"
         if safe_link:
-            highlights_section += f"   > <br><a href=\"{safe_link}\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"inline-flex items-center justify-center rounded-md text-xs font-bold tracking-wide transition-colors bg-primary !text-primary-foreground hover:bg-primary/90 hover:!text-primary-foreground h-8 px-3 py-1 no-underline shadow-sm mt-2 mb-2\">Read more →</a>\n\n"
+            highlights_section += f"    <a href=\"{safe_link}\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"read-more-btn\">Read Full Article →</a>\n"
         else:
-            highlights_section += f"   > Read more (link unavailable)\n\n"
+            highlights_section += f"    <p class=\"text-muted-foreground italic\">Read more (link unavailable)</p>\n"
+        highlights_section += f"  </div>\n"
+        highlights_section += f"</details>\n\n"
         item_num += 1
 
     # Summary table
@@ -1309,7 +1324,10 @@ showComments: false
 
     # Category sections
     for category in sorted(content_by_category.keys()):
-        body += f"## {category}\n\n"
+        body += f"<h2 class=\"mt-8 mb-4 pb-2 border-b-2 border-primary/20 text-2xl font-bold tracking-tight text-primary flex items-center gap-2\">\n"
+        body += f"  <span class=\"bg-primary/10 text-primary px-3 py-1 rounded-md text-sm uppercase tracking-wider\">Category</span>\n"
+        body += f"  {category}\n"
+        body += f"</h2>\n\n"
         body += content_by_category[category] + "\n\n"
 
     with open(filename, "w", encoding="utf-8") as f:

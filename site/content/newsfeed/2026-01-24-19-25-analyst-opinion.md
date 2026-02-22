@@ -7,13 +7,19 @@ draft: false
 showCTA: false
 showComments: false
 ---
-## This Week's Top 3: Cybersecurity
+<h2 class="mt-8 mb-4 pb-2 border-b-2 border-primary/20 text-2xl font-bold tracking-tight text-primary flex items-center gap-2">
+  <span class="bg-primary/10 text-primary px-3 py-1 rounded-md text-sm uppercase tracking-wider">Category</span>
+  This Week's Top 3: Cybersecurity
+</h2>
 
 The **Cybersecurity** category captured significant attention this week with **331** articles and **22** trending stories.
 
 Here are the **Top 3 Articles of the Week**—comprehensive analysis of the most impactful stories:
 
-## Article 1: Appsec Roundup - June 2025
+<h2 class="mt-8 mb-4 pb-2 border-b-2 border-primary/20 text-2xl font-bold tracking-tight text-primary flex items-center gap-2">
+  <span class="bg-primary/10 text-primary px-3 py-1 rounded-md text-sm uppercase tracking-wider">Category</span>
+  Article 1: Appsec Roundup - June 2025
+</h2>
 
 The article indicates advancements in threat
 
@@ -48,7 +54,10 @@ Based on the trends and vulnerabilities highlighted in the **June 2025 AppSec Ro
 
 ---
 
-## Article 2: Secure By Design roundup - November 2025
+<h2 class="mt-8 mb-4 pb-2 border-b-2 border-primary/20 text-2xl font-bold tracking-tight text-primary flex items-center gap-2">
+  <span class="bg-primary/10 text-primary px-3 py-1 rounded-md text-sm uppercase tracking-wider">Category</span>
+  Article 2: Secure By Design roundup - November 2025
+</h2>
 
 The article touches on
 
@@ -94,7 +103,10 @@ This article relates to the CYBERSECURITY security category. The content address
 
 ---
 
-## Article 3: MedDream PACS Premium sendOruReport reflected cross-site scripting (XSS) vulnerability
+<h2 class="mt-8 mb-4 pb-2 border-b-2 border-primary/20 text-2xl font-bold tracking-tight text-primary flex items-center gap-2">
+  <span class="bg-primary/10 text-primary px-3 py-1 rounded-md text-sm uppercase tracking-wider">Category</span>
+  Article 3: MedDream PACS Premium sendOruReport reflected cross-site scripting (XSS) vulnerability
+</h2>
 
 
 
