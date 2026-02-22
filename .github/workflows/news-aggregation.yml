@@ -38,7 +38,9 @@ jobs:
       - name: Check for changes
         id: verify_diff
         run: |
-          git diff --quiet site/content/newsfeed/ || echo "changes=true" >> $GITHUB_OUTPUT
+          git add site/content/newsfeed/
+          git add site/content/errors/
+          git diff --staged --quiet || echo "changes=true" >> $GITHUB_OUTPUT
       
       - name: Commit and push new posts
         if: steps.verify_diff.outputs.changes == 'true'

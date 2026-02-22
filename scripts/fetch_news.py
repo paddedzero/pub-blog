@@ -1593,11 +1593,13 @@ def create_analyst_opinion_post(date_str, trending_data, config):
     top_3_articles = top_articles[:3]
 
     front_matter = f"""---
-layout: post
 title: "Analyst Top 3: {category} — {formatted_title_date}"
-date: {date_str} {time_front}
-categories: ["Analyst Opinion", "{category}"]
-tags: ["Analyst Opinion", "{category}", "deep-dive"]
+description: "Analyst Top 3: {category} — {formatted_title_date}"
+pubDate: {date_str}
+tags: ["analysis", "{category}"]
+draft: false
+showCTA: false
+showComments: false
 ---
 """
 
