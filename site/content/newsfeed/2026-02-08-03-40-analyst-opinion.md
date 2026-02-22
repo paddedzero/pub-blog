@@ -7,19 +7,13 @@ draft: false
 showCTA: false
 showComments: false
 ---
-<h2 class="mt-8 mb-4 pb-2 border-b-2 border-primary/20 text-2xl font-bold tracking-tight text-primary flex items-center gap-2">
-  <span class="bg-primary/10 text-primary px-3 py-1 rounded-md text-sm uppercase tracking-wider">Category</span>
-  This Week's Top 3: Cybersecurity
-</h2>
+## This Week's Top 3: Cybersecurity
 
 The **Cybersecurity** category captured significant attention this week with **381** articles and **23** trending stories.
 
 Here are the **Top 3 Articles of the Week**—comprehensive analysis of the most impactful stories:
 
-<h2 class="mt-8 mb-4 pb-2 border-b-2 border-primary/20 text-2xl font-bold tracking-tight text-primary flex items-center gap-2">
-  <span class="bg-primary/10 text-primary px-3 py-1 rounded-md text-sm uppercase tracking-wider">Category</span>
-  Article 1: Appsec Roundup - June 2025
-</h2>
+## Article 1: Appsec Roundup - June 2025
 
 The article notes advancements in
 
@@ -66,10 +60,7 @@ The June 2025 roundup wasn't just a list of new products; it was a manifesto for
 
 ---
 
-<h2 class="mt-8 mb-4 pb-2 border-b-2 border-primary/20 text-2xl font-bold tracking-tight text-primary flex items-center gap-2">
-  <span class="bg-primary/10 text-primary px-3 py-1 rounded-md text-sm uppercase tracking-wider">Category</span>
-  Article 2: Secure By Design roundup - Dec/Jan 2026
-</h2>
+## Article 2: Secure By Design roundup - Dec/Jan 2026
 
 The article discusses the
 
@@ -117,10 +108,7 @@ To counter the normalization of deviance and the shifting threat landscape, we m
 
 ---
 
-<h2 class="mt-8 mb-4 pb-2 border-b-2 border-primary/20 text-2xl font-bold tracking-tight text-primary flex items-center gap-2">
-  <span class="bg-primary/10 text-primary px-3 py-1 rounded-md text-sm uppercase tracking-wider">Category</span>
-  Article 3: Incognito Market admin sentenced to 30 years for running $105 million dark web drug empire
-</h2>
+## Article 3: Incognito Market admin sentenced to 30 years for running $105 million dark web drug empire
 
 A dark web drug bazaar operator
 

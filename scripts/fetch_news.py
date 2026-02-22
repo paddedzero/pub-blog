@@ -1324,10 +1324,7 @@ showComments: false
 
     # Category sections
     for category in sorted(content_by_category.keys()):
-        body += f"<h2 class=\"mt-8 mb-4 pb-2 border-b-2 border-primary/20 text-2xl font-bold tracking-tight text-primary flex items-center gap-2\">\n"
-        body += f"  <span class=\"bg-primary/10 text-primary px-3 py-1 rounded-md text-sm uppercase tracking-wider\">Category</span>\n"
-        body += f"  {category}\n"
-        body += f"</h2>\n\n"
+        body += f"## {category}\n\n"
         body += content_by_category[category] + "\n\n"
 
     with open(filename, "w", encoding="utf-8") as f:

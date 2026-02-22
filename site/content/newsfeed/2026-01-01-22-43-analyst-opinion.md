@@ -7,18 +7,12 @@ draft: false
 showCTA: false
 showComments: false
 ---
-<h2 class="mt-8 mb-4 pb-2 border-b-2 border-primary/20 text-2xl font-bold tracking-tight text-primary flex items-center gap-2">
-  <span class="bg-primary/10 text-primary px-3 py-1 rounded-md text-sm uppercase tracking-wider">Category</span>
-  Weekly Trend: Cybersecurity
-</h2>
+## Weekly Trend: Cybersecurity
 
 This week, the **Cybersecurity** category dominated our news feeds with **64** articles and **7** trending highlights.
 Here's what you need to know from a strategic perspective.
 
-<h2 class="mt-8 mb-4 pb-2 border-b-2 border-primary/20 text-2xl font-bold tracking-tight text-primary flex items-center gap-2">
-  <span class="bg-primary/10 text-primary px-3 py-1 rounded-md text-sm uppercase tracking-wider">Category</span>
-  Key Developments
-</h2>
+## Key Developments
 
 ### 1. Two US Cybersecurity Pros Plead Guilty Over Ransomware Attacks
 
@@ -38,10 +32,7 @@ The story you are reading is a series of scoops nestled inside a far more urgent
 
 <a href="https://krebsonsecurity.com/2026/01/the-kimwolf-botnet-is-stalking-your-local-network/">Full story</a>
 
-<h2 class="mt-8 mb-4 pb-2 border-b-2 border-primary/20 text-2xl font-bold tracking-tight text-primary flex items-center gap-2">
-  <span class="bg-primary/10 text-primary px-3 py-1 rounded-md text-sm uppercase tracking-wider">Category</span>
-  Strategic Takeaway
-</h2>
+## Strategic Takeaway
 
 The convergence of these stories points to a critical shift in the industry. Organizations should focus on the following:
 

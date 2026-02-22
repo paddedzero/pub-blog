@@ -395,3 +395,16 @@ h6:hover .heading-link {
   background-color: var(--color-border);
   color: var(--color-foreground) !important;
 }
+
+/* Apply the requested category formatting globally to all prose h2s, 
+   preserving the markdown TOC functionality. Bypass Tailwind Typography defaults. */
+.prose h2 {
+  margin-top: 2rem !important;
+  margin-bottom: 1rem !important;
+  padding-bottom: 0.5rem !important;
+  border-bottom: 2px solid color-mix(in srgb, var(--color-primary) 20%, transparent) !important;
+  font-size: 1.5rem !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.025em !important;
+  color: var(--color-primary) !important;
+}

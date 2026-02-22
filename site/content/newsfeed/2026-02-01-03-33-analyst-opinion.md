@@ -7,19 +7,13 @@ draft: false
 showCTA: false
 showComments: false
 ---
-<h2 class="mt-8 mb-4 pb-2 border-b-2 border-primary/20 text-2xl font-bold tracking-tight text-primary flex items-center gap-2">
-  <span class="bg-primary/10 text-primary px-3 py-1 rounded-md text-sm uppercase tracking-wider">Category</span>
-  This Week's Top 3: Cybersecurity
-</h2>
+## This Week's Top 3: Cybersecurity
 
 The **Cybersecurity** category captured significant attention this week with **329** articles and **28** trending stories.
 
 Here are the **Top 3 Articles of the Week**—comprehensive analysis of the most impactful stories:
 
-<h2 class="mt-8 mb-4 pb-2 border-b-2 border-primary/20 text-2xl font-bold tracking-tight text-primary flex items-center gap-2">
-  <span class="bg-primary/10 text-primary px-3 py-1 rounded-md text-sm uppercase tracking-wider">Category</span>
-  Article 1: Appsec Roundup - June 2025
-</h2>
+## Article 1: Appsec Roundup - June 2025
 
 The article highlights
 
@@ -65,10 +59,7 @@ The "Appsec Roundup of June 2025" isn't a victory lap—it's a warning. We have 
 
 ---
 
-<h2 class="mt-8 mb-4 pb-2 border-b-2 border-primary/20 text-2xl font-bold tracking-tight text-primary flex items-center gap-2">
-  <span class="bg-primary/10 text-primary px-3 py-1 rounded-md text-sm uppercase tracking-wider">Category</span>
-  Article 2: Secure By Design roundup - Dec/Jan 2026
-</h2>
+## Article 2: Secure By Design roundup - Dec/Jan 2026
 
 The article discusses
 
@@ -118,10 +109,7 @@ We are at a crossroads. We can continue to treat security as a series of regulat
 
 ---
 
-<h2 class="mt-8 mb-4 pb-2 border-b-2 border-primary/20 text-2xl font-bold tracking-tight text-primary flex items-center gap-2">
-  <span class="bg-primary/10 text-primary px-3 py-1 rounded-md text-sm uppercase tracking-wider">Category</span>
-  Article 3: U.S. CISA adds a flaw in Ivanti EPMM to its Known Exploited Vulnerabilities catalog
-</h2>
+## Article 3: U.S. CISA adds a flaw in Ivanti EPMM to its Known Exploited Vulnerabilities catalog
 
 The U.S. Cybersecurity and Infrastructure Security Agency (CISA) adds a flaw in Ivanti EPMM to its Known Exploited Vulnerabilities catalog. The U.S. Cybersecurity and Infrastructure Security Agency (CISA) added an Ivanti EPMM vulnerability, tracked as CVE-2026-1281 (CVSS score of 9.8), to its Known Exploited Vulnerabilities (KEV) catalog. The vulnerability is a code injection that impacts Ivanti Endpoint Manager […]
 
