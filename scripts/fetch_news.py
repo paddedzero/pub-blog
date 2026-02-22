@@ -657,7 +657,7 @@ def format_entries_for_category(entries):
   </summary>
   <div class="p-4 border-t border-border">
     <p class="text-muted-foreground mb-4 text-sm md:text-base leading-relaxed">{summary}</p>
-    {"<a href='" + safe_link + "' target='_blank' rel='noopener noreferrer' class='inline-flex items-center justify-center rounded-md text-sm font-bold tracking-wide transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2 no-underline shadow-sm'>Read Full Article →</a>" if safe_link else ""}
+    {"<a href='" + safe_link + "' target='_blank' rel='noopener noreferrer' class='inline-flex items-center justify-center rounded-md text-sm font-bold tracking-wide transition-colors bg-primary !text-primary-foreground hover:bg-primary/90 hover:!text-primary-foreground h-9 px-4 py-2 no-underline shadow-sm mt-2'>Read Full Article →</a>" if safe_link else ""}
   </div>
 </details>
 """
@@ -704,7 +704,7 @@ aiGenerated: true
         highlights_section += f"{i}. **{title}** ({count} mentions)\n"
         highlights_section += f"   > {summary}\n"
         if safe_link:
-            highlights_section += f"   > <a href=\"{safe_link}\">Read more</a>\n\n"
+            highlights_section += f"   > <br><a href=\"{safe_link}\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"inline-flex items-center justify-center rounded-md text-xs font-bold tracking-wide transition-colors bg-primary !text-primary-foreground hover:bg-primary/90 hover:!text-primary-foreground h-8 px-3 py-1 no-underline shadow-sm mt-2 mb-2\">Read more →</a>\n\n"
         else:
             highlights_section += f"   > Read more (link unavailable)\n\n"
 
@@ -1290,7 +1290,7 @@ showComments: false
         highlights_section += f"{item_num}. **{title}** ({count} mentions)\n"
         highlights_section += f"   > {summary}\n"
         if safe_link:
-            highlights_section += f"   > <a href=\"{safe_link}\">Read more</a>\n\n"
+            highlights_section += f"   > <br><a href=\"{safe_link}\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"inline-flex items-center justify-center rounded-md text-xs font-bold tracking-wide transition-colors bg-primary !text-primary-foreground hover:bg-primary/90 hover:!text-primary-foreground h-8 px-3 py-1 no-underline shadow-sm mt-2 mb-2\">Read more →</a>\n\n"
         else:
             highlights_section += f"   > Read more (link unavailable)\n\n"
         item_num += 1
@@ -1623,7 +1623,7 @@ Here are the **Top 3 Articles of the Week**—comprehensive analysis of the most
         articles_body += f"## Article {rank}: {article_title}\n\n"
         articles_body += f"{article_summary}\n\n"
         if article_link:
-            articles_body += f"<a href=\"{article_link}\">Read the full article</a>\n\n"
+            articles_body += f"<a href=\"{article_link}\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"inline-flex items-center justify-center rounded-md text-sm font-bold tracking-wide transition-colors bg-primary !text-primary-foreground hover:bg-primary/90 hover:!text-primary-foreground h-9 px-4 py-2 no-underline shadow-sm mt-4\">Read Full Article →</a>\n\n"
         
         # Get historical context and Gemini analysis for this article
         keywords_for_history = [category.lower()] + (article.get('keywords_hit', []) if isinstance(article.get('keywords_hit'), list) else [])
