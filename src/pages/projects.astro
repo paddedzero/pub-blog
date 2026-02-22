@@ -10,6 +10,9 @@ const schema = getBreadcrumbSchema([
 ]);
 
 const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
+
+const base = SITE.base;
+const toPath = (path: string) => `${base}${path.replace(/^\/+/, '')}`;
 ---
 
 <Layout title="Projects" description={SITE.projectsDescription} schema={schema}>
@@ -30,7 +33,7 @@ const projects = (await getCollection('projects')).sort((a, b) => a.data.order -
     {
       projects.map((project) => {
         const isExternal = project.data.directLink;
-        const projectUrl = isExternal ? project.data.link : `/projects/${project.id}`;
+        const projectUrl = isExternal ? project.data.link : toPath(`/projects/${project.id}`);
         const target = isExternal ? '_blank' : '_self';
 
         return (

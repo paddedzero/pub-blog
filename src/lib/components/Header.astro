@@ -1,13 +1,15 @@
 ---
 import { SITE } from '@/config';
+
+const base = SITE.base;
 ---
 
 <header class="flex items-center justify-between p-4">
-  <a href="/" class="text-2xl font-bold uppercase tracking-wider">
+  <a href={base} class="text-2xl font-bold uppercase tracking-wider">
     {SITE.title}
   </a>
   <nav class="flex gap-4">
-    <a href="/posts" class="hover:text-gray-400">Blog</a>
-    <a href="/about" class="hover:text-gray-400">About</a>
+    <a href={`${base}posts`} class="hover:text-gray-400">Blog</a>
+    <a href={`${base}about`} class="hover:text-gray-400">About</a>
   </nav>
 </header>

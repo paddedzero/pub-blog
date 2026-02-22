@@ -23,6 +23,9 @@ const projects = (await getCollection('projects'))
   .sort((a, b) => a.data.order - b.data.order)
   .slice(0, SITE.homeProjects.count);
 
+const base = SITE.base;
+const toPath = (path: string) => `${base}${path.replace(/^\/+/, '')}`;
+
 const appearances = (await getCollection('appearances'))
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
   .slice(0, 3);
@@ -86,7 +89,7 @@ const appearances = (await getCollection('appearances'))
             </h2>
             <div class="h-px flex-1 mx-4 sm:mx-8 bg-border opacity-70" />
             <a
-              href="/posts"
+              href={toPath('posts')}
               class="px-2 py-0.5 rounded-md text-xs font-bold uppercase tracking-widest hover:bg-accent hover:text-primary transition-all no-underline"
             >
               See all posts
@@ -109,7 +112,7 @@ const appearances = (await getCollection('appearances'))
         </h2>
         <div class="h-px flex-1 mx-4 sm:mx-8 bg-border opacity-70"></div>
         <a
-          href="/posts"
+          href={toPath('posts')}
           class="px-2 py-0.5 rounded-md text-xs font-bold uppercase tracking-widest hover:bg-accent hover:text-primary transition-all no-underline"
           >Writing Archive</a
         >
@@ -143,10 +146,10 @@ const appearances = (await getCollection('appearances'))
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
             {projects.map((project) => {
               const isExternal = project.data.directLink;
-              const projectUrl = isExternal ? project.data.link : `/projects/${project.id}`;
+              const projectUrl = isExternal ? project.data.link : toPath(`/projects/${project.id}`);
               const target = isExternal ? '_blank' : '_self';
-
-              return (
+            <a
+              href={toPath('projects')}
                 <article class="flex flex-col h-full p-6 rounded-2xl bg-secondary/30 border border-border/50 hover:bg-secondary/50 hover:border-border transition-all duration-300 group">
                   <div class="flex-1">
                     <a
@@ -259,7 +262,7 @@ const appearances = (await getCollection('appearances'))
         </h2>
         <div class="h-px flex-1 mx-4 sm:mx-8 bg-border opacity-70"></div>
         <a
-          href="/appearances"
+          href={toPath('appearances')}
           class="px-2 py-0.5 rounded-md text-xs font-bold uppercase tracking-widest hover:bg-accent hover:text-primary transition-all no-underline"
           >View appearances</a
         >
