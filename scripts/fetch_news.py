@@ -719,7 +719,7 @@ aiGenerated: true
             highlights_section += f"   > Read more (link unavailable)\n\n"
 
     # HTML Table for Article Summary
-    table = """<div class="not-prose my-8 overflow-hidden rounded-xl border border-border bg-secondary/20 text-card-foreground shadow-lg w-1/2 min-w-[320px]">
+    table = """<div class="not-prose my-8 overflow-hidden rounded-xl border border-border bg-secondary/20 text-card-foreground shadow-lg" style="width:50%;min-width:320px">
   <table class="w-full text-sm text-left">
     <thead class="bg-secondary border-b border-border">
       <tr>
@@ -1368,7 +1368,7 @@ showComments: false
         item_num += 1
 
     # HTML Table for Article Summary
-    table = """<div class="not-prose my-8 overflow-hidden rounded-xl border border-border bg-secondary/20 text-card-foreground shadow-lg w-1/2 min-w-[320px]">
+    table = """<div class="not-prose my-8 overflow-hidden rounded-xl border border-border bg-secondary/20 text-card-foreground shadow-lg" style="width:50%;min-width:320px">
   <table class="w-full text-sm text-left">
     <thead class="bg-secondary border-b border-border">
       <tr>

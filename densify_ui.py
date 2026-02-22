@@ -177,7 +177,7 @@ def process_files():
                     unique_cats.append(c)
             categories = unique_cats
             
-            html_table = """<div class="not-prose my-8 overflow-hidden rounded-xl border border-border bg-secondary/20 text-card-foreground shadow-lg w-1/2 min-w-[320px]">
+            html_table = """<div class="not-prose my-8 overflow-hidden rounded-xl border border-border bg-secondary/20 text-card-foreground shadow-lg" style="width:50%;min-width:320px">
   <table class="w-full text-sm text-left">
     <thead class="bg-secondary border-b border-border">
       <tr>
