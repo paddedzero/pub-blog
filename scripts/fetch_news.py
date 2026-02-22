@@ -649,33 +649,20 @@ def format_entries_for_category(entries):
             
         safe_link = get_verified_link(title, link)
         
-        md_block = ""
-        if safe_link:
-             md_block = f"- **{title}** — {summary}\n  <a href=\"{safe_link}\">Read more</a>"
-        else:
-             md_block = f"- **{title}** — {summary}"
-             
-        # Add attribution for clustered stories
-        if len(group) > 1:
-            sources = set()
-            for g in group:
-                s_name = g.get('_source_name')
-                if s_name:
-                    sources.add(s_name)
-                    
-            source_list = sorted(list(sources))
-            if source_list:
-                # Limit source list length
-                extras = ""
-                if len(source_list) > 3:
-                     extras = f" + {len(source_list)-3} others"
-                     source_list = source_list[:3]
-                
-                md_block += f" *(Covered by: {', '.join(source_list)}{extras})*"
-            else:
-                 md_block += f" *(+ {len(group)-1} similar stories)*"
-            
-        formatted.append(md_block)
+        md_block = f"""
+<details class="mb-4 group border border-border rounded-lg overflow-hidden transition-all duration-200 bg-card">
+  <summary class="font-bold cursor-pointer bg-secondary/30 hover:bg-secondary/70 p-4 transition-colors list-none flex items-start justify-between gap-4">
+    <span class="text-foreground leading-snug">{title} {f"<span class='text-xs font-normal text-muted-foreground ml-2 px-2 py-0.5 bg-muted rounded-full'>{'+ ' + str(len(group)-1) + ' similar' if len(group)>1 else ''}</span>" if len(group)>1 else ''}</span>
+    <span class="text-muted-foreground text-sm group-open:rotate-180 transition-transform duration-300 mt-1">▼</span>
+  </summary>
+  <div class="p-4 border-t border-border">
+    <p class="text-muted-foreground mb-4 text-sm md:text-base leading-relaxed">{summary}</p>
+    {"<a href='" + safe_link + "' target='_blank' rel='noopener noreferrer' class='inline-flex items-center justify-center rounded-md text-sm font-bold tracking-wide transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2 no-underline shadow-sm'>Read Full Article →</a>" if safe_link else ""}
+  </div>
+</details>
+"""
+        
+        formatted.append(md_block.strip())
         
     return "\n\n".join(formatted)
 
@@ -986,10 +973,13 @@ def create_story_clusters_post(date_str, highlights):
     time_front = now_local.strftime("%H:%M:%S %z")
 
     front_matter = f"""---
-layout: post
 title: "This Week in Security: A Briefing — {formatted_title_date}"
-date: {date_str} {time_front}
-categories: [newsbrief, weekly-brief]
+description: "This Week in Security: A Briefing — {formatted_title_date}"
+pubDate: {date_str}
+tags: ["tech-news"]
+draft: false
+showCTA: false
+showComments: false
 ---
 """
 
@@ -1236,11 +1226,13 @@ def create_weekly_scan_post(date_str, content_by_category, highlights):
     time_front = now_local.strftime("%H:%M:%S %z")
 
     front_matter = f"""---
-layout: post
 title: "Weekly Scan: Cloud, Cybersecurity, AI News — {formatted_title_date}"
-date: {date_str} {time_front}
-categories: ["News Brief", "weekly-brief"]
-tags: ["News Brief", "weekly-brief"]
+description: "Weekly Scan: Cloud, Cybersecurity, AI News — {formatted_title_date}"
+pubDate: {date_str}
+tags: ["tech-news"]
+draft: false
+showCTA: false
+showComments: false
 ---
 """
 
