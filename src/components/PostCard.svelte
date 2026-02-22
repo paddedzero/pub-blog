@@ -28,7 +28,19 @@
 >
   <div class="flex flex-col gap-1.5">
     <div class="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 sm:gap-4">
-      <h2 class="text-base sm:text-lg font-black tracking-tight leading-tight">
+      <div class="flex flex-col">
+        {#if post.data.tags?.includes('tech-news')}
+          <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 mb-2 w-max">
+            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path></svg>
+            Weekly Scan
+          </div>
+        {:else if post.data.tags?.includes('analysis')}
+          <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 mb-2 w-max">
+            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path></svg>
+            Analyst Opinion
+          </div>
+        {/if}
+        <h2 class="text-base sm:text-lg font-black tracking-tight leading-tight">
         <a href={`${import.meta.env.BASE_URL.replace(/\/$/, '')}/posts/${slug}`} class="transition-colors no-underline">
           <span class="absolute -inset-x-0 -inset-y-0 z-20"></span>
           <span class="relative z-10 text-foreground group-hover:text-primary transition-colors"
@@ -36,6 +48,7 @@
           >
         </a>
       </h2>
+      </div>
       <time
         datetime={post.data.pubDate.toISOString()}
         class="flex-shrink-0 text-xs font-medium text-muted-foreground tabular-nums uppercase tracking-widest"

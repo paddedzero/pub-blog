@@ -9,9 +9,12 @@
 
   interface Props {
     headings: Heading[];
+    maxDepth?: number;
   }
 
-  let { headings }: Props = $props();
+  let { headings, maxDepth }: Props = $props();
+  
+  let filteredHeadings = $derived(maxDepth ? headings.filter(h => h.depth <= maxDepth) : headings);
   let activeId = $state('');
 
   onMount(() => {
@@ -26,7 +29,7 @@
       { rootMargin: '-100px 0px -66%' }
     );
 
-    headings.forEach((heading) => {
+    filteredHeadings.forEach((heading) => {
       const element = document.getElementById(heading.slug);
       if (element) observer.observe(element);
     });
@@ -52,7 +55,7 @@
   };
 </script>
 
-{#if headings.length > 0}
+{#if filteredHeadings.length > 0}
   <nav
     class="sticky top-32 lg:top-40 max-h-[calc(100vh-160px)] overflow-y-auto pl-2 pr-4 scrollbar-hide"
   >
@@ -63,7 +66,7 @@
       <!-- Background Vertical Line -->
       <div class="absolute left-0 top-0 bottom-0 w-px bg-border/20"></div>
 
-      {#each headings as heading (heading.slug)}
+      {#each filteredHeadings as heading (heading.slug)}
         <a
           href={`#${heading.slug}`}
           onclick={(e) => handleClick(e, heading.slug)}

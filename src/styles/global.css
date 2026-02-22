@@ -9,6 +9,7 @@
   font-weight: 400;
   src: url('@fontsource/outfit/files/outfit-latin-400-normal.woff2') format('woff2');
 }
+
 @font-face {
   font-family: 'Outfit';
   font-style: normal;
@@ -16,6 +17,7 @@
   font-weight: 700;
   src: url('@fontsource/outfit/files/outfit-latin-700-normal.woff2') format('woff2');
 }
+
 @font-face {
   font-family: 'Inter Variable';
   font-style: normal;
@@ -42,7 +44,8 @@
   --color-secondary-foreground: #18181b;
 
   --color-muted: #f4f4f5;
-  --color-muted-foreground: #18181b; /* Zinc 900 for absolute contrast compliance */
+  --color-muted-foreground: #18181b;
+  /* Zinc 900 for absolute contrast compliance */
 
   --color-accent: #f4f4f5;
   --color-accent-foreground: #18181b;
@@ -77,14 +80,17 @@
   margin-bottom: 0.5rem;
   vertical-align: middle;
 }
+
 .badge-opinion {
   background-color: #dbeafe;
   color: #1e40af;
 }
+
 .badge-weekly-scan {
   background-color: #dcfce7;
   color: #166534;
 }
+
 /* TOC sidebar (section index for weekly scans) */
 .toc-sidebar {
   position: sticky;
@@ -92,6 +98,7 @@
   max-height: calc(100vh - 3rem);
   overflow-y: auto;
 }
+
 .toc-sidebar nav a {
   display: block;
   padding: 4px 8px;
@@ -101,10 +108,12 @@
   text-decoration: none;
   transition: border-left-color 0.15s, color 0.15s;
 }
+
 .toc-sidebar nav a:hover {
   border-left-color: #059669;
   color: #059669;
 }
+
 /* Weekly scan post: two-column layout when TOC is present */
 .weekly-scan-layout {
   display: grid;
@@ -112,10 +121,12 @@
   gap: 2rem;
   align-items: start;
 }
+
 @media (max-width: 768px) {
   .weekly-scan-layout {
     grid-template-columns: 1fr;
   }
+
   .toc-sidebar {
     position: static;
     max-height: none;
@@ -123,108 +134,115 @@
   }
 }
 
-  .dark {
-    --color-background: #212737;
-    --color-foreground: #eaedf3;
-    --color-card: #303446; /* Catppuccin Frappe Base */
-    --color-card-foreground: #eaedf3;
-    --color-popover: #303446;
-    --color-popover-foreground: #eaedf3;
-    --color-primary: #f2d5cf; /* Lighter accent for Catppuccin harmony */
-    --color-primary-foreground: #303446;
-    --color-secondary: #292c3c; /* Mantle */
-    --color-secondary-foreground: #eaedf3;
-    --color-muted: #303446;
-    --color-muted-foreground: #d1d5dc;
-    --color-accent: #292c3c;
-    --color-accent-foreground: #eaedf3;
-    --color-destructive: #ef4444;
-    --color-destructive-foreground: #fafafa;
-    --color-border: #494d64; /* Surface 1 */
-    --color-input: #494d64;
-    --color-ring: #f2d5cf;
-  }
+.dark {
+  --color-background: #212737;
+  --color-foreground: #eaedf3;
+  --color-card: #303446;
+  /* Catppuccin Frappe Base */
+  --color-card-foreground: #eaedf3;
+  --color-popover: #303446;
+  --color-popover-foreground: #eaedf3;
+  --color-primary: #f2d5cf;
+  /* Lighter accent for Catppuccin harmony */
+  --color-primary-foreground: #303446;
+  --color-secondary: #292c3c;
+  /* Mantle */
+  --color-secondary-foreground: #eaedf3;
+  --color-muted: #303446;
+  --color-muted-foreground: #d1d5dc;
+  --color-accent: #292c3c;
+  --color-accent-foreground: #eaedf3;
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #fafafa;
+  --color-border: #494d64;
+  /* Surface 1 */
+  --color-input: #494d64;
+  --color-ring: #f2d5cf;
+}
 
-  /* Fluid Typography & Scaling */
+/* Fluid Typography & Scaling */
+html {
+  color-scheme: light;
+  /* Base font size scales between 16px on mobile and 18px on 4K */
+  font-size: clamp(16px, 0.5vw + 14px, 20px);
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+@media (min-width: 2560px) {
   html {
-    color-scheme: light;
-    /* Base font size scales between 16px on mobile and 18px on 4K */
-    font-size: clamp(16px, 0.5vw + 14px, 20px);
+    font-size: 22px;
+    /* Extra boost for 4K */
   }
+}
 
-  html.dark {
-    color-scheme: dark;
-  }
+* {
+  border-color: var(--color-border);
+}
 
-  @media (min-width: 2560px) {
-    html {
-      font-size: 22px; /* Extra boost for 4K */
-    }
-  }
+*::selection {
+  background-color: var(--color-primary) !important;
+  color: var(--color-primary-foreground) !important;
+}
 
-  * {
-    border-color: var(--color-border);
-  }
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  line-height: 1.6;
+}
 
-  *::selection {
-    background-color: var(--color-primary) !important;
-    color: var(--color-primary-foreground) !important;
-  }
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  @apply tracking-tight font-black;
+  line-height: 1.1;
+}
 
-  body {
-    background-color: var(--color-background);
-    color: var(--color-foreground);
-    font-family: var(--font-sans);
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    text-rendering: optimizeLegibility;
-    line-height: 1.6;
-  }
+a {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  text-decoration: none;
+  color: inherit;
+}
 
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
-    @apply tracking-tight font-black;
-    line-height: 1.1;
-  }
+a:hover {
+  color: var(--color-primary);
+}
 
-  a {
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    text-decoration: none;
-    color: inherit;
-  }
+input,
+textarea,
+select {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  border-color: var(--color-border);
+}
 
-  a:hover {
-    color: var(--color-primary);
-  }
-
-  input,
-  textarea,
-  select {
-    background-color: var(--color-background);
-    color: var(--color-foreground);
-    border-color: var(--color-border);
-  }
-
-  input::placeholder {
-    color: var(--color-muted-foreground);
-    opacity: 0.5;
-  }
+input::placeholder {
+  color: var(--color-muted-foreground);
+  opacity: 0.5;
 }
 
 @layer utilities {
   .text-main {
     color: var(--color-foreground);
   }
+
   .text-muted {
     color: var(--color-muted-foreground);
   }
+
   .bg-main {
     background-color: var(--color-background);
   }
+
   .border-main {
     border-color: var(--color-border);
   }
@@ -252,7 +270,8 @@
   --tw-prose-quote-borders: var(--color-border);
   --tw-prose-captions: var(--color-muted-foreground);
   --tw-prose-code: var(--color-foreground);
-  --tw-prose-pre-bg: #f8fafc; /* Subtle off-white for light mode */
+  --tw-prose-pre-bg: #f8fafc;
+  /* Subtle off-white for light mode */
 
   font-size: 1.05rem;
   line-height: 1.75;
@@ -314,7 +333,8 @@
 .dark .shiki,
 .dark .astro-code {
   background-color: var(--shiki-dark-bg) !important;
-  border-color: #494d64 !important; /* Catppuccin Surface 1 */
+  border-color: #494d64 !important;
+  /* Catppuccin Surface 1 */
 }
 
 .dark .prose {

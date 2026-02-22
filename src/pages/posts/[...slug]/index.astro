@@ -39,6 +39,8 @@ const effectiveSlug =
     ? getNewsfeedSlug(post as CollectionEntry<'newsfeed'>)
     : getPostSlug(post as CollectionEntry<'posts'>);
 
+const isScan = post.data.tags?.includes('tech-news');
+
 const schemas = [
   getBlogPostingSchema({
     title: post.data.title,
@@ -152,7 +154,7 @@ const schemas = [
 
     <!-- Sidebar (TOC) -->
     <div class="hidden lg:block w-64 flex-shrink-0">
-      <TableOfContents client:load {headings} />
+      <TableOfContents client:load {headings} maxDepth={isScan ? 2 : undefined} />
     </div>
   </div>
 </Layout>
