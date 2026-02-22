@@ -719,9 +719,9 @@ aiGenerated: true
             highlights_section += f"   > Read more (link unavailable)\n\n"
 
     # HTML Table for Article Summary
-    table = """<div class="not-prose my-8 overflow-hidden rounded-xl border border-border bg-secondary/20 text-card-foreground shadow-lg">
+    table = """<div class="not-prose my-8 overflow-hidden rounded-xl border border-border bg-secondary/20 text-card-foreground shadow-lg w-1/2 min-w-[320px]">
   <table class="w-full text-sm text-left">
-    <thead class="bg-secondary/40 border-b border-border">
+    <thead class="bg-secondary border-b border-border">
       <tr>
         <th class="px-6 py-3 font-semibold text-foreground">
           <span class="flex items-center gap-2">
@@ -751,7 +751,7 @@ aiGenerated: true
         total_articles += article_count
 
     table += f"""    </tbody>
-    <tfoot class="bg-secondary/40 font-semibold border-t-2 border-border">
+    <tfoot class="bg-secondary font-semibold border-t-2 border-border">
       <tr>
         <td class="px-6 py-4 text-foreground">Total Articles Scanned</td>
         <td class="px-6 py-4 text-right text-primary">{total_articles}</td>
@@ -1368,9 +1368,9 @@ showComments: false
         item_num += 1
 
     # HTML Table for Article Summary
-    table = """<div class="not-prose my-8 overflow-hidden rounded-xl border border-border bg-secondary/20 text-card-foreground shadow-lg">
+    table = """<div class="not-prose my-8 overflow-hidden rounded-xl border border-border bg-secondary/20 text-card-foreground shadow-lg w-1/2 min-w-[320px]">
   <table class="w-full text-sm text-left">
-    <thead class="bg-secondary/40 border-b border-border">
+    <thead class="bg-secondary border-b border-border">
       <tr>
         <th class="px-6 py-3 font-semibold text-foreground">
           <span class="flex items-center gap-2">
@@ -1400,7 +1400,7 @@ showComments: false
         total_articles += article_count
 
     table += f"""    </tbody>
-    <tfoot class="bg-secondary/40 font-semibold border-t-2 border-border">
+    <tfoot class="bg-secondary font-semibold border-t-2 border-border">
       <tr>
         <td class="px-6 py-4 text-foreground">Total Articles Scanned</td>
         <td class="px-6 py-4 text-right text-primary">{total_articles}</td>
