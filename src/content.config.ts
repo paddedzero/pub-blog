@@ -43,6 +43,8 @@ const projects = defineCollection({
     tags: z.array(z.string()).default([]),
     types: z.array(z.enum(['commercial', 'open-source', 'social'])).default([]),
     image: z.string().optional(),
+    post_type: z.enum(['opinion', 'weekly-scan']).optional(),
+    toc_categories: z.array(z.string()).optional(),
     order: z.number().default(0),
     directLink: z.boolean().default(false).optional(),
   }),
