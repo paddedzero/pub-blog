@@ -135,6 +135,248 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install dependencies
+        run: npm ci
+      - name: Generate TTS audio
+        run: |
+          pip3 install edge-tts --quiet
+          python3 << 'PYEOF'
+          import asyncio, re, sys
+          from pathlib import Path
+          import edge_tts
+          POSTS_DIR = Path("site/content/newsfeed")
+          AUDIO_DIR = Path("site/public/assets/audio")
+          BASE_PATH = "/pub-blog"
+          VOICE = "en-US-AriaNeural"
+          MARKER = "<!-- nb-audio-player -->"
+          TPL = '<div id="nbp-{s}" style="background:#f8f9fa;border:1px solid #dee2e6;border-radius:10px;padding:12px 16px;margin:0 0 24px;font-family:-apple-system,BlinkMacSystemFont,sans-serif;display:flex;align-items:center;gap:12px;"><button id="nbb-{s}" style="background:#0d6efd;border:none;border-radius:50%;width:44px;height:44px;cursor:pointer;flex-shrink:0;color:#fff;font-size:18px;display:flex;align-items:center;justify-content:center;" aria-label="Play">&#9654;</button><div style="flex:1;min-width:0;"><div style="font-size:12px;color:#6c757d;margin-bottom:4px;font-weight:600;letter-spacing:.3px;">&#127908; Listen to this brief</div><input type="range" id="nbs-{s}" value="0" min="0" max="100" step="0.1" style="width:100%;height:4px;cursor:pointer;accent-color:#0d6efd;" aria-label="Seek"><div style="font-size:11px;color:#adb5bd;margin-top:4px;"><span id="nbc-{s}">0:00</span>&thinsp;/&thinsp;<span id="nbd-{s}">--:--</span></div></div><audio id="nba-{s}" src="{base}/assets/audio/{s}.mp3" preload="metadata"></audio></div><script>(function(){var s="{s}";var a=document.getElementById("nba-"+s);var b=document.getElementById("nbb-"+s);var sk=document.getElementById("nbs-"+s);var cu=document.getElementById("nbc-"+s);var du=document.getElementById("nbd-"+s);function fmt(n){var m=Math.floor(n/60),q=Math.floor(n%60);return m+":"+(q<10?"0":"")+q;}b.addEventListener("click",function(){if(a.paused){a.play();b.textContent="\u23F8";b.setAttribute("aria-label","Pause");}else{a.pause();b.textContent="\u25B6";b.setAttribute("aria-label","Play");}});sk.addEventListener("input",function(){if(a.duration)a.currentTime=(parseFloat(sk.value)/100)*a.duration;});a.addEventListener("ended",function(){b.textContent="\u25B6";b.setAttribute("aria-label","Play");sk.value=0;});a.addEventListener("timeupdate",function(){if(a.duration){sk.value=(a.currentTime/a.duration)*100;cu.textContent=fmt(a.currentTime);}});a.addEventListener("loadedmetadata",function(){du.textContent=fmt(a.duration);});})();</script>'
+          def find_latest():
+              if not POSTS_DIR.exists():
+                  return None
+              posts = sorted(POSTS_DIR.glob("*-weekly-scan.md"), reverse=True)
+              return posts[0] if posts else None
+          def parse_post(p):
+              t = p.read_text(encoding="utf-8")
+              m = re.match(r"^---\r?\n(.*?)\r?\n---\r?\n?(.*)", t, re.DOTALL)
+              if not m:
+                  return ("", t)
+              fm, body = m.group(1), m.group(2)
+              fm = re.sub(r'(?m)^pubDate\s*:', 'date:', fm)
+              return (fm, body)
+          def extract_headlines(body):
+              hl = []
+              in_section = False
+              for line in body.splitlines():
+                  if line.startswith("#") and re.search(r'trend', line, re.IGNORECASE):
+                      in_section = True
+                      continue
+                  if in_section:
+                      if line.startswith("#"):
+                          break
+                      m = re.search(r'^\s*\d+\.\s+\*\*(.+?)\*\*', line)
+                      if not m:
+                          m = re.search(r'<a[^>]*>([^<]+)</a>', line)
+                      if not m:
+                          m = re.search(r'\[([^\]]+)\]\(', line)
+                      if m:
+                          hl.append(m.group(1).strip())
+              return hl
+          def build_script(title, headlines):
+              parts = ["Weekly News Brief. " + title + "."]
+              if headlines:
+                  parts.append("Here are the top trending stories.")
+                  for i, h in enumerate(headlines, 1):
+                      parts.append("Story " + str(i) + ". " + h + ".")
+              parts.append("That is all for this week. Stay informed.")
+              return " ".join(parts)
+          async def gen_audio(text, path):
+              try:
+                  c = edge_tts.Communicate(text, VOICE)
+                  await c.save(str(path))
+              except Exception as e:
+                  raise RuntimeError("TTS generation failed: " + str(e)) from e
+          def main():
+              post = find_latest()
+              if not post:
+                  print("No weekly-scan post found, skipping TTS.")
+                  return
+              stem = post.stem
+              fm, body = parse_post(post)
+              if MARKER in body:
+                  print("Player already present in " + stem + ", skipping.")
+                  return
+              hl = extract_headlines(body)
+              if not hl:
+                  print("No trending stories found in " + stem + ", skipping TTS.")
+                  return
+              tm = re.search(r"^(?:title|date)\s*:\s*(.+)$", fm, re.MULTILINE)
+              title = tm.group(1).strip().strip("\"'") if tm else "Weekly News Brief"
+              try:
+                  AUDIO_DIR.mkdir(parents=True, exist_ok=True)
+                  ap = AUDIO_DIR / (stem + ".mp3")
+                  asyncio.run(gen_audio(build_script(title, hl), ap))
+                  print("Audio generated: " + str(ap))
+                  ph = TPL.replace("{s}", stem).replace("{base}", BASE_PATH)
+                  post.write_text(
+                      "---\n" + fm + "\n---\n" + MARKER + "\n" + ph + "\n\n" + body,
+                      encoding="utf-8"
+                  )
+                  print("Player injected into " + str(post))
+              except Exception as e:
+                  print("Warning: TTS or player injection failed: " + str(e))
+                  print("Continuing deployment without audio player.")
+          main()
+          PYEOF
+      - name: Build site
+        run: npm run build
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install dependencies
+        run: npm ci
+      - name: Generate TTS audio
+        run: |
+          pip3 install edge-tts --quiet
+          python3 << 'PYEOF'
+          import asyncio, re, sys
+          from pathlib import Path
+          import edge_tts
+          POSTS_DIR = Path("site/content/newsfeed")
+          AUDIO_DIR = Path("site/public/assets/audio")
+          BASE_PATH = "/pub-blog"
+          VOICE = "en-US-AriaNeural"
+          MARKER = "<!-- nb-audio-player -->"
+          TPL = '<div id="nbp-{s}" style="background:#f8f9fa;border:1px solid #dee2e6;border-radius:10px;padding:12px 16px;margin:0 0 24px;font-family:-apple-system,BlinkMacSystemFont,sans-serif;display:flex;align-items:center;gap:12px;"><button id="nbb-{s}" style="background:#0d6efd;border:none;border-radius:50%;width:44px;height:44px;cursor:pointer;flex-shrink:0;color:#fff;font-size:18px;display:flex;align-items:center;justify-content:center;" aria-label="Play">&#9654;</button><div style="flex:1;min-width:0;"><div style="font-size:12px;color:#6c757d;margin-bottom:4px;font-weight:600;letter-spacing:.3px;">&#127908; Listen to this brief</div><input type="range" id="nbs-{s}" value="0" min="0" max="100" step="0.1" style="width:100%;height:4px;cursor:pointer;accent-color:#0d6efd;" aria-label="Seek"><div style="font-size:11px;color:#adb5bd;margin-top:4px;"><span id="nbc-{s}">0:00</span>&thinsp;/&thinsp;<span id="nbd-{s}">--:--</span></div></div><audio id="nba-{s}" src="{base}/assets/audio/{s}.mp3" preload="metadata"></audio></div><script>(function(){var s="{s}";var a=document.getElementById("nba-"+s);var b=document.getElementById("nbb-"+s);var sk=document.getElementById("nbs-"+s);var cu=document.getElementById("nbc-"+s);var du=document.getElementById("nbd-"+s);function fmt(n){var m=Math.floor(n/60),q=Math.floor(n%60);return m+":"+(q<10?"0":"")+q;}b.addEventListener("click",function(){if(a.paused){a.play();b.textContent="\u23F8";b.setAttribute("aria-label","Pause");}else{a.pause();b.textContent="\u25B6";b.setAttribute("aria-label","Play");}});sk.addEventListener("input",function(){if(a.duration)a.currentTime=(parseFloat(sk.value)/100)*a.duration;});a.addEventListener("ended",function(){b.textContent="\u25B6";b.setAttribute("aria-label","Play");sk.value=0;});a.addEventListener("timeupdate",function(){if(a.duration){sk.value=(a.currentTime/a.duration)*100;cu.textContent=fmt(a.currentTime);}});a.addEventListener("loadedmetadata",function(){du.textContent=fmt(a.duration);});})();</script>'
+          def find_latest():
+              if not POSTS_DIR.exists():
+                  return None
+              posts = sorted(POSTS_DIR.glob("*-weekly-scan.md"), reverse=True)
+              return posts[0] if posts else None
+          def parse_post(p):
+              t = p.read_text(encoding="utf-8")
+              m = re.match(r"^---\r?\n(.*?)\r?\n---\r?\n?(.*)", t, re.DOTALL)
+              if not m:
+                  return ("", t)
+              fm, body = m.group(1), m.group(2)
+              fm = re.sub(r'(?m)^pubDate\s*:', 'date:', fm)
+              return (fm, body)
+          def extract_headlines(body):
+              hl = []
+              in_section = False
+              for line in body.splitlines():
+                  if line.startswith("#") and re.search(r'trend', line, re.IGNORECASE):
+                      in_section = True
+                      continue
+                  if in_section:
+                      if line.startswith("#"):
+                          break
+                      m = re.search(r'^\s*\d+\.\s+\*\*(.+?)\*\*', line)
+                      if not m:
+                          m = re.search(r'<a[^>]*>([^<]+)</a>', line)
+                      if not m:
+                          m = re.search(r'\[([^\]]+)\]\(', line)
+                      if m:
+                          hl.append(m.group(1).strip())
+              return hl
+          def build_script(title, headlines):
+              parts = ["Weekly News Brief. " + title + "."]
+              if headlines:
+                  parts.append("Here are the top trending stories.")
+                  for i, h in enumerate(headlines, 1):
+                      parts.append("Story " + str(i) + ". " + h + ".")
+              parts.append("That is all for this week. Stay informed.")
+              return " ".join(parts)
+          async def gen_audio(text, path):
+              try:
+                  c = edge_tts.Communicate(text, VOICE)
+                  await c.save(str(path))
+              except Exception as e:
+                  raise RuntimeError("TTS generation failed: " + str(e)) from e
+          def main():
+              post = find_latest()
+              if not post:
+                  print("No weekly-scan post found, skipping TTS.")
+                  return
+              stem = post.stem
+              fm, body = parse_post(post)
+              if MARKER in body:
+                  print("Player already present in " + stem + ", skipping.")
+                  return
+              hl = extract_headlines(body)
+              if not hl:
+                  print("No trending stories found in " + stem + ", skipping TTS.")
+                  return
+              tm = re.search(r"^(?:title|date)\s*:\s*(.+)$", fm, re.MULTILINE)
+              title = tm.group(1).strip().strip("\"'") if tm else "Weekly News Brief"
+              try:
+                  AUDIO_DIR.mkdir(parents=True, exist_ok=True)
+                  ap = AUDIO_DIR / (stem + ".mp3")
+                  asyncio.run(gen_audio(build_script(title, hl), ap))
+                  print("Audio generated: " + str(ap))
+                  ph = TPL.replace("{s}", stem).replace("{base}", BASE_PATH)
+                  post.write_text(
+                      "---\n" + fm + "\n---\n" + MARKER + "\n" + ph + "\n\n" + body,
+                      encoding="utf-8"
+                  )
+                  print("Player injected into " + str(post))
+              except Exception as e:
+                  print("Warning: TTS or player injection failed: " + str(e))
+                  print("Continuing deployment without audio player.")
+          main()
+          PYEOF
+      - name: Build site
+        run: npm run build
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
+
       - name: Setup Node 22
         uses: actions/setup-node@v4
         with:
