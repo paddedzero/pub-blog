@@ -719,32 +719,36 @@ aiGenerated: true
             highlights_section += f"   > Read more (link unavailable)\n\n"
 
     # HTML Table for Article Summary
-    table = """<div class="relative w-full overflow-auto mb-6 border border-border/50 rounded-lg">
-  <table class="w-full text-sm">
-    <thead class="bg-secondary/30">
-      <tr class="border-b border-border/50 transition-colors">
-        <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground font-semibold">Category</th>
-        <th class="h-10 px-4 text-right align-middle font-medium text-muted-foreground font-semibold">Article Count</th>
+    table = """<div class="not-prose my-8 overflow-hidden rounded-xl border border-border bg-secondary/20 text-card-foreground shadow-lg">
+  <div class="bg-secondary/40 px-6 py-4 border-b border-border flex items-center gap-2">
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+    <h3 class="font-semibold text-lg">Scan Overview</h3>
+  </div>
+  <table class="w-full text-sm text-left">
+    <thead class="bg-secondary/30 text-muted-foreground">
+      <tr>
+        <th class="px-6 py-3 font-medium border-b border-border">Category</th>
+        <th class="px-6 py-3 font-medium border-b border-border text-right">Article Count</th>
       </tr>
     </thead>
-    <tbody class="[&_tr:last-child]:border-0">
+    <tbody class="divide-y divide-border">
 """
     total_articles = 0
     for category, entries_text in sorted(content_by_category.items()):
         # The new dense HTML structure relies on <details> tags, so count those instead of - **
         article_count = entries_text.count("<details")
-        table += f"""      <tr class="border-b border-border/50 transition-colors hover:bg-muted/50">
-        <td class="p-3 px-4 align-middle font-medium">{category}</td>
-        <td class="p-3 px-4 align-middle text-right">{article_count}</td>
+        table += f"""      <tr class="hover:bg-secondary/30 transition-colors">
+        <td class="px-6 py-3 font-medium">{category}</td>
+        <td class="px-6 py-3 text-right text-muted-foreground">{article_count}</td>
       </tr>
 """
         total_articles += article_count
 
     table += f"""    </tbody>
-    <tfoot class="bg-primary/5 font-medium text-foreground border-t border-border/50">
+    <tfoot class="bg-secondary/40 font-semibold border-t-2 border-border">
       <tr>
-        <td class="p-3 px-4 align-middle font-bold text-primary">Total Articles Scanned</td>
-        <td class="p-3 px-4 align-middle text-right font-bold text-primary">{total_articles}</td>
+        <td class="px-6 py-4">Total Articles Scanned</td>
+        <td class="px-6 py-4 text-right text-primary">{total_articles}</td>
       </tr>
     </tfoot>
   </table>
@@ -1357,34 +1361,37 @@ showComments: false
         highlights_section += f"</details>\n\n"
         item_num += 1
 
-    # Summary table
     # HTML Table for Article Summary
-    table = """<div class="relative w-full overflow-auto mb-6 border border-border/50 rounded-lg">
-  <table class="w-full text-sm">
-    <thead class="bg-secondary/30">
-      <tr class="border-b border-border/50 transition-colors">
-        <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground font-semibold">Category</th>
-        <th class="h-10 px-4 text-right align-middle font-medium text-muted-foreground font-semibold">Article Count</th>
+    table = """<div class="not-prose my-8 overflow-hidden rounded-xl border border-border bg-secondary/20 text-card-foreground shadow-lg">
+  <div class="bg-secondary/40 px-6 py-4 border-b border-border flex items-center gap-2">
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+    <h3 class="font-semibold text-lg">Scan Overview</h3>
+  </div>
+  <table class="w-full text-sm text-left">
+    <thead class="bg-secondary/30 text-muted-foreground">
+      <tr>
+        <th class="px-6 py-3 font-medium border-b border-border">Category</th>
+        <th class="px-6 py-3 font-medium border-b border-border text-right">Article Count</th>
       </tr>
     </thead>
-    <tbody class="[&_tr:last-child]:border-0">
+    <tbody class="divide-y divide-border">
 """
     total_articles = 0
     for category, entries_text in sorted(content_by_category.items()):
         # The new dense HTML structure relies on <details> tags, so count those instead of - **
         article_count = entries_text.count("<details")
-        table += f"""      <tr class="border-b border-border/50 transition-colors hover:bg-muted/50">
-        <td class="p-3 px-4 align-middle font-medium">{category}</td>
-        <td class="p-3 px-4 align-middle text-right">{article_count}</td>
+        table += f"""      <tr class="hover:bg-muted/30 transition-colors">
+        <td class="px-6 py-3 font-medium">{category}</td>
+        <td class="px-6 py-3 text-right text-muted-foreground">{article_count}</td>
       </tr>
 """
         total_articles += article_count
 
     table += f"""    </tbody>
-    <tfoot class="bg-primary/5 font-medium text-foreground border-t border-border/50">
+    <tfoot class="bg-muted/50 font-semibold border-t-2 border-border">
       <tr>
-        <td class="p-3 px-4 align-middle font-bold text-primary">Total Articles Scanned</td>
-        <td class="p-3 px-4 align-middle text-right font-bold text-primary">{total_articles}</td>
+        <td class="px-6 py-4">Total Articles Scanned</td>
+        <td class="px-6 py-4 text-right text-primary">{total_articles}</td>
       </tr>
     </tfoot>
   </table>

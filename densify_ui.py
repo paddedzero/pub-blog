@@ -161,6 +161,71 @@ def process_files():
             flags=re.DOTALL
         )
 
+        # 4. Upgrade any existing HTML Table (Phase 11 or broken Phase 12) to clean Premium Card Table
+        def premium_table_replacer(match):
+            html_content = match.group(0)
+            
+            # Extract categories from ANY td variant (Phase 11 or Phase 12 classes)
+            cat_pattern = re.compile(r'<td class="(?:p-3 px-4 align-middle|px-6 py-3) font-medium">(.*?)</td>')
+            categories = cat_pattern.findall(html_content)
+            # Deduplicate while preserving order (broken runs may have dupes)
+            seen = set()
+            unique_cats = []
+            for c in categories:
+                if c not in seen:
+                    seen.add(c)
+                    unique_cats.append(c)
+            categories = unique_cats
+            
+            html_table = """<div class="not-prose my-8 overflow-hidden rounded-xl border border-border bg-secondary/20 text-card-foreground shadow-lg">
+  <div class="bg-secondary/40 px-6 py-4 border-b border-border flex items-center gap-2">
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+    <h3 class="font-semibold text-lg">Scan Overview</h3>
+  </div>
+  <table class="w-full text-sm text-left">
+    <thead class="bg-secondary/30 text-muted-foreground">
+      <tr>
+        <th class="px-6 py-3 font-medium border-b border-border">Category</th>
+        <th class="px-6 py-3 font-medium border-b border-border text-right">Article Count</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-border">\n"""
+            
+            total_count = 0
+            for cat_name in categories:
+                cat_section_pattern = re.compile(rf'## {re.escape(cat_name)}\n(.*?)(?=## |\Z)', re.DOTALL)
+                section_match = cat_section_pattern.search(content)
+                count = 0
+                if section_match:
+                    count = section_match.group(1).count('<details')
+                
+                html_table += f"""      <tr class="hover:bg-secondary/30 transition-colors">
+        <td class="px-6 py-3 font-medium">{cat_name}</td>
+        <td class="px-6 py-3 text-right text-muted-foreground">{count}</td>
+      </tr>\n"""
+                total_count += count
+                
+            html_table += f"""    </tbody>
+    <tfoot class="bg-secondary/40 font-semibold border-t-2 border-border">
+      <tr>
+        <td class="px-6 py-4">Total Articles Scanned</td>
+        <td class="px-6 py-4 text-right text-primary">{total_count}</td>
+      </tr>
+    </tfoot>
+  </table>
+</div>"""
+            
+            return "## Article Summary\n\n" + html_table + "\n\n"
+
+        # Match from "## Article Summary" all the way to the next "## " heading
+        # This captures the ENTIRE block including all nested divs/tables
+        content = re.sub(
+            r'## Article Summary\n\n<div class="(?:relative|not-prose)[^>]*>.*?(?=\n## [A-Z])',
+            premium_table_replacer,
+            content,
+            flags=re.DOTALL
+        )
+
         if content != original_content:
             with open(file_path, 'w', encoding='utf-8') as f:
                 f.write(content)
