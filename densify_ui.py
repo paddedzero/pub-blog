@@ -108,17 +108,58 @@ def process_files():
         # 2. Update all OLD markdown bullet articles to dense list format
         content = bullet_pattern.sub(bullet_replacer, content)
         
-        # 3. Fix broken table article counts
-        def count_replacer(match):
-            cat_name = match.group(1).strip()
-            cat_section_pattern = re.compile(rf'## {re.escape(cat_name)}\n(.*?)(?=## |\Z)', re.DOTALL)
-            section_match = cat_section_pattern.search(content)
-            if section_match:
-                count = section_match.group(1).count('<details')
-                return f"| {cat_name} | {count} |"
-            return match.group(0)
+        # 3. Replace Markdown Table with styled HTML Table
+        def table_replacer(match):
+            table_rows_str = match.group(1)
+            row_pattern = re.compile(r'\|\s*([^|]*?)\s*\|\s*\d+\s*\|')
+            rows = row_pattern.findall(table_rows_str)
             
-        content = re.sub(r'\|\s*([^|]*?)\s*\|\s*\d+\s*\|', count_replacer, content)
+            html_table = """<div class="relative w-full overflow-auto mb-6 border border-border/50 rounded-lg">
+  <table class="w-full text-sm">
+    <thead class="bg-secondary/30">
+      <tr class="border-b border-border/50 transition-colors">
+        <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground font-semibold">Category</th>
+        <th class="h-10 px-4 text-right align-middle font-medium text-muted-foreground font-semibold">Article Count</th>
+      </tr>
+    </thead>
+    <tbody class="[&_tr:last-child]:border-0">\n"""
+            
+            total_count = 0
+            for cat_name in rows:
+                cat_name = cat_name.strip()
+                if cat_name in ["Category", "---"]: continue
+                
+                # Count actual details tags in the content for this category
+                cat_section_pattern = re.compile(rf'## {re.escape(cat_name)}\n(.*?)(?=## |\Z)', re.DOTALL)
+                section_match = cat_section_pattern.search(content)
+                count = 0
+                if section_match:
+                    count = section_match.group(1).count('<details')
+                
+                html_table += f"""      <tr class="border-b border-border/50 transition-colors hover:bg-muted/50">
+        <td class="p-3 px-4 align-middle font-medium">{cat_name}</td>
+        <td class="p-3 px-4 align-middle text-right">{count}</td>
+      </tr>\n"""
+                total_count += count
+                
+            html_table += f"""    </tbody>
+    <tfoot class="bg-primary/5 font-medium text-foreground border-t border-border/50">
+      <tr>
+        <td class="p-3 px-4 align-middle font-bold text-primary">Total Articles Scanned</td>
+        <td class="p-3 px-4 align-middle text-right font-bold text-primary">{total_count}</td>
+      </tr>
+    </tfoot>
+  </table>
+</div>"""
+            
+            return "## Article Summary\n\n" + html_table
+
+        content = re.sub(
+            r'## Article Summary\n\n\| Category \| Article Count \|\n\|---\|---\|\n(.*?)\n+(?:\*\*Total Articles Scanned: \d+\*\*|Total Articles Scanned: \d+)',
+            table_replacer,
+            content,
+            flags=re.DOTALL
+        )
 
         if content != original_content:
             with open(file_path, 'w', encoding='utf-8') as f:

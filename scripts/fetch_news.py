@@ -718,16 +718,42 @@ aiGenerated: true
         else:
             highlights_section += f"   > Read more (link unavailable)\n\n"
 
-    table = "| Category | Article Count |\n|---|---|\n"
+    # HTML Table for Article Summary
+    table = """<div class="relative w-full overflow-auto mb-6 border border-border/50 rounded-lg">
+  <table class="w-full text-sm">
+    <thead class="bg-secondary/30">
+      <tr class="border-b border-border/50 transition-colors">
+        <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground font-semibold">Category</th>
+        <th class="h-10 px-4 text-right align-middle font-medium text-muted-foreground font-semibold">Article Count</th>
+      </tr>
+    </thead>
+    <tbody class="[&_tr:last-child]:border-0">
+"""
     total_articles = 0
     for category, entries_text in sorted(content_by_category.items()):
-        article_count = len([line for line in entries_text.split('\n') if line.strip().startswith('- **')])
-        table += f"| {category} | {article_count} |\n"
+        # The new dense HTML structure relies on <details> tags, so count those instead of - **
+        article_count = entries_text.count("<details")
+        table += f"""      <tr class="border-b border-border/50 transition-colors hover:bg-muted/50">
+        <td class="p-3 px-4 align-middle font-medium">{category}</td>
+        <td class="p-3 px-4 align-middle text-right">{article_count}</td>
+      </tr>
+"""
         total_articles += article_count
+
+    table += f"""    </tbody>
+    <tfoot class="bg-primary/5 font-medium text-foreground border-t border-border/50">
+      <tr>
+        <td class="p-3 px-4 align-middle font-bold text-primary">Total Articles Scanned</td>
+        <td class="p-3 px-4 align-middle text-right font-bold text-primary">{total_articles}</td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+"""
 
     body = highlights_section
     body += "## Article Summary\n\n"
-    body += table + f"\n**Total Articles Scanned: {total_articles}**\n\n"
+    body += table + "\n"
 
     for category in sorted(content_by_category.keys()):
         body += f"## {category}\n\n"
@@ -1332,17 +1358,42 @@ showComments: false
         item_num += 1
 
     # Summary table
-    table = "| Category | Article Count |\n|---|---|\n"
+    # HTML Table for Article Summary
+    table = """<div class="relative w-full overflow-auto mb-6 border border-border/50 rounded-lg">
+  <table class="w-full text-sm">
+    <thead class="bg-secondary/30">
+      <tr class="border-b border-border/50 transition-colors">
+        <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground font-semibold">Category</th>
+        <th class="h-10 px-4 text-right align-middle font-medium text-muted-foreground font-semibold">Article Count</th>
+      </tr>
+    </thead>
+    <tbody class="[&_tr:last-child]:border-0">
+"""
     total_articles = 0
     for category, entries_text in sorted(content_by_category.items()):
         # The new dense HTML structure relies on <details> tags, so count those instead of - **
         article_count = entries_text.count("<details")
-        table += f"| {category} | {article_count} |\n"
+        table += f"""      <tr class="border-b border-border/50 transition-colors hover:bg-muted/50">
+        <td class="p-3 px-4 align-middle font-medium">{category}</td>
+        <td class="p-3 px-4 align-middle text-right">{article_count}</td>
+      </tr>
+"""
         total_articles += article_count
+
+    table += f"""    </tbody>
+    <tfoot class="bg-primary/5 font-medium text-foreground border-t border-border/50">
+      <tr>
+        <td class="p-3 px-4 align-middle font-bold text-primary">Total Articles Scanned</td>
+        <td class="p-3 px-4 align-middle text-right font-bold text-primary">{total_articles}</td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+"""
 
     body = highlights_section
     body += "## Article Summary\n\n"
-    body += table + f"\n**Total Articles Scanned: {total_articles}**\n\n"
+    body += table + "\n"
 
     # Category sections
     for category in sorted(content_by_category.keys()):
