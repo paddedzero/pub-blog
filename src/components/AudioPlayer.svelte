@@ -164,10 +164,22 @@
       };
 
       utterance.onerror = (event) => {
-        console.error('Speech synthesis error:', event);
+        const errorType = event.error;
+        const errorMsg = `Speech synthesis error: ${errorType}`;
+        console.error(`[AudioPlayer] ${errorMsg}`, event);
+        
         isPlaying = false;
         isPaused = false;
         currentSentence = '';
+        
+        // Add user-facing error message
+        if (errorType === 'not-allowed') {
+          currentSentence = '🔊 Audio playback denied by browser. Try reloading the page.';
+        } else if (errorType === 'network') {
+          currentSentence = '🔊 Network error. Please check your connection.';
+        } else if (errorType === 'synthesis-failed') {
+          currentSentence = '🔊 Speech synthesis failed. Please try again.';
+        }
       };
 
       utterances.push(utterance);
@@ -189,7 +201,7 @@
       synth.resume();
       isPlaying = true;
       isPaused = false;
-      console.log('Resuming playback');
+      console.log('[AudioPlayer] Resuming playback');
       return;
     }
 
@@ -202,7 +214,10 @@
     currentChunkIndex = fromIndex;
     currentUtteranceIndex = fromIndex;
 
-    console.log('Playing from index', fromIndex, 'with voice:', selectedVoice?.name); // Debug
+    console.log('[AudioPlayer] Playing from index', fromIndex, 'with voice:', selectedVoice?.name);
+    
+    // Cancel any pending utterances first to prevent "not-allowed" errors
+    synth.cancel();
     
     // Speak utterances from the specified index
     for (let i = fromIndex; i < utterances.length; i++) {
