@@ -41,7 +41,7 @@ export interface SiteConfig {
 }
 
 export const SITE: SiteConfig = {
-  author: 'feedmeup',
+  author: 'paddedzero',
   desc: 'Automated news aggregation for Cloud, Cybersecurity, AI, and ML technologies.',
   title: 'pub-blog',
   ogImage: 'og.png',

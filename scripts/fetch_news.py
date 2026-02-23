@@ -576,11 +576,39 @@ def get_cve_details(cve_id):
         logging.warning(f"[CVE] Failed to fetch details for {cve_id}: {e}")
         return None
 
-def format_entries_for_category(entries):
+def extract_highlight_urls(highlights):
+    """Extract normalized URLs from highlights to prevent duplicates in category sections.
+    
+    Args:
+        highlights: list of (entry, count) tuples
+    
+    Returns:
+        set of normalized URLs (lowercased, stripped)
+    """
+    urls = set()
+    for entry, _ in highlights:
+        link = entry.get("link", "").strip().lower()
+        if link:
+            urls.add(link)
+    return urls
+
+
+def format_entries_for_category(entries, exclude_urls=None):
     """Format entries as markdown for a category, newest first.
     Groups similar articles to reduce noise.
     Uses clean RSS summary (Phase 1) instead of expensive AI summary for the long list.
+    
+    Args:
+        entries: list of entry dicts
+        exclude_urls: optional set of URLs to exclude (e.g., already in highlights)
     """
+    if not entries:
+        return ""
+    
+    # Filter out entries that are already in highlights
+    if exclude_urls:
+        entries = [e for e in entries if e.get("link", "").strip().lower() not in exclude_urls]
+    
     if not entries:
         return ""
 
@@ -1924,10 +1952,14 @@ def main():
     now_local = datetime.now(LOCAL_TZ)
     yesterday = now_local - timedelta(days=1)
     today = yesterday.strftime("%Y-%m-%d")
+    
+    # Extract URLs from highlights to prevent duplicates in category sections
+    highlight_urls = extract_highlight_urls(top_highlights)
+    logging.info("Excluding %d highlight articles from category sections to prevent duplicates", len(highlight_urls))
+    
     content_by_category = {}
-
     for cat, entries in reports.items():
-        content_by_category[cat] = format_entries_for_category(entries)
+        content_by_category[cat] = format_entries_for_category(entries, exclude_urls=highlight_urls)
 
     # Phase 2: Dual-post output (Weekly Scan + Analyst Opinion + Story Clusters)
     phase2_enabled = config.get("synthesis", {}).get("enable_opinion_post", False)

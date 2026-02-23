@@ -11,6 +11,7 @@ import SeriesNavigation from '@/components/SeriesNavigation.astro';
 import LanguageSelector from '@/components/LanguageSelector.svelte';
 import CTABlock from '@/components/CTABlock.astro';
 import Comments from '@/components/Comments.svelte';
+import AudioPlayer from '@/components/AudioPlayer.svelte';
 import { getBlogPostingSchema, getBreadcrumbSchema } from '@/lib/schemas';
 
 export async function getStaticPaths() {
@@ -40,6 +41,10 @@ const effectiveSlug =
     : getPostSlug(post as CollectionEntry<'posts'>);
 
 const isScan = post.data.tags?.includes('tech-news');
+const isWeeklyScan = isScan && post.id.includes('weekly-scan');
+
+// Get raw body content for audio player
+const rawBody = post.body || '';
 
 const schemas = [
   getBlogPostingSchema({
@@ -140,6 +145,8 @@ const schemas = [
           )
         }
       </div>
+
+      {isWeeklyScan && rawBody && <AudioPlayer client:load content={rawBody} title={post.data.title} />}
 
       <article class="prose max-w-none mt-12 mb-16">
         <Content />
