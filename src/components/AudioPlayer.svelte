@@ -311,6 +311,11 @@
     const target = document.querySelector(scrollTargetSelector);
     if (target) {
       target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Add focus for accessibility
+      target.focus({ preventScroll: true });
+      console.log('Scrolled to article:', scrollTargetSelector);
+    } else {
+      console.warn('Scroll target not found:', scrollTargetSelector);
     }
   }
 
@@ -624,7 +629,7 @@
               >
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
-              Read Article
+              Scroll to Article
             </button>
           </div>
         </div>

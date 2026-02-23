@@ -146,9 +146,9 @@ const schemas = [
         }
       </div>
 
-      {isWeeklyScan && rawBody && <AudioPlayer client:load content={rawBody} title={post.data.title} />}
+      {isWeeklyScan && rawBody && <AudioPlayer client:load content={rawBody} title={post.data.title} scrollTargetSelector="#article-content" />}
 
-      <article class="prose max-w-none mt-12 mb-16">
+      <article id="article-content" class="prose max-w-none mt-12 mb-16">
         <Content />
       </article>
 
