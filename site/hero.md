@@ -1,6 +1,5 @@
-# I'm {author}, developer and designer.
+# I'm the decrypter, developer and cyber dude.
 
-Building premium web experiences with Astro, Svelte, and Tailwind.
-Focused on performance, aesthetics, and clean code.
+Connecting cyber dots across threat intelligence, cloud security, and risk management.
 
-I am currently working on open-source tools and sharing my journey through writing.
+Building automated intelligence feeds and sharing insights on cybersecurity, risk, and regulatory landscapes from NYC to APAC and beyond.
