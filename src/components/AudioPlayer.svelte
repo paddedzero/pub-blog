@@ -13,6 +13,7 @@
   export let content: string = '';
   export let title: string = 'Audio Playback';
   export let scrollTargetSelector: string = 'article'; // CSS selector for scroll target
+  export let headings: any[] = []; // Array of {depth, slug, text} from Astro
 
   let isSupported = false;
   let isPlaying = false;
@@ -38,6 +39,7 @@
   let progressBarElement: HTMLElement | null = null;
   let currentUtteranceIndex = 0;
   let needsUtteranceRecreation = true; // Start as true for first play
+  let chunkToHeadingMap: (string | null)[] = []; // Maps chunk index to heading slug
 
   // Speed options
   const speedOptions = [
@@ -57,6 +59,9 @@
       estimatedMinutes = estimateReadingTime(cleanedText);
       totalTime = estimatedMinutes * 60;
       textChunks = splitIntoChunks(cleanedText);
+
+      // Map chunks to headings for scrolling
+      chunkToHeadingMap = mapChunksToHeadings();
 
       // Load voices
       availableVoices = await getAvailableVoices();
@@ -124,6 +129,9 @@
 
     console.log('Preparing utterances with voice:', selectedVoice?.name || 'default'); // Debug
 
+    // Map chunks to headings for scrolling
+    chunkToHeadingMap = mapChunksToHeadings();
+
     chunks.forEach((chunk, index) => {
       const utterance = new SpeechSynthesisUtterance(chunk);
       utterance.rate = playbackRate;
@@ -142,6 +150,11 @@
         const firstSentence = sentences[0]?.trim() || chunk.substring(0, 200);
         currentSentence = firstSentence.substring(0, 200) + (firstSentence.length > 200 ? '...' : '');
         console.log('Speaking:', currentSentence); // Debug log
+
+        // Scroll to corresponding heading
+        const headingSlug = chunkToHeadingMap[index];
+        scrollToHeading(headingSlug);
+
         updateProgress();
       };
 
@@ -307,11 +320,63 @@
     seekTo(Math.max(0, Math.min(100, percentage)));
   }
 
+  function mapChunksToHeadings() {
+    if (headings.length === 0) return [];
+
+    // Calculate cumulative character positions for each heading
+    const headingMap = headings.map((h) => ({
+      ...h,
+      textLower: h.text.toLowerCase(),
+    }));
+
+    // For each chunk, find the closest preceding heading
+    const chunkCharCount = cleanedText.split(' ').reduce(
+      (acc, word, idx) => {
+        acc[idx] = (acc[idx - 1] || 0) + word.length + 1;
+        return acc;
+      },
+      {} as Record<number, number>
+    );
+
+    return textChunks.map((chunk) => {
+      // Find heading that matches chunk content
+      const chunkLower = chunk.toLowerCase().substring(0, 100);
+
+      for (const heading of headingMap) {
+        if (chunkLower.includes(heading.textLower.substring(0, 30))) {
+          return heading.slug;
+        }
+      }
+
+      // Return last heading as fallback
+      return headingMap[headingMap.length - 1]?.slug || null;
+    });
+  }
+
+  function scrollToHeading(slug: string | null) {
+    if (!slug) {
+      scrollToArticle();
+      return;
+    }
+
+    // Try to find heading by slug (id or data attribute)
+    const headingElement =
+      document.querySelector(`[id="${slug}"]`) || document.querySelector(`[data-slug="${slug}"]`);
+
+    if (headingElement) {
+      headingElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      console.log('Scrolled to heading:', slug);
+    } else {
+      // Fallback to article if heading not found
+      scrollToArticle();
+      console.warn('Heading not found, scrolled to article:', slug);
+    }
+  }
+
   function scrollToArticle() {
     const target = document.querySelector(scrollTargetSelector);
     if (target) {
       target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      // Add focus for accessibility
       target.focus({ preventScroll: true });
       console.log('Scrolled to article:', scrollTargetSelector);
     } else {
@@ -612,7 +677,7 @@
             </p>
             <button
               type="button"
-              on:click={scrollToArticle}
+              on:click={() => scrollToHeading(chunkToHeadingMap[currentUtteranceIndex])}
               class="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary/80 hover:underline transition-colors cursor-pointer bg-none border-none p-0"
               aria-label="Scroll to article content"
             >
