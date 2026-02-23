@@ -36,9 +36,13 @@ jobs:
           python scripts/fetch_news.py
       
       - name: Commit and push new posts
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "GitHub Actions Bot"
           git config user.email "actions@github.com"
+          git config --global url."https://github.com/".insteadOf "git://github.com/"
+          
           git add site/content/newsfeed/ || true
           git add site/content/errors/ || true
           
@@ -46,5 +50,5 @@ jobs:
             echo "No new posts generated. Either no articles matched filters or all were duplicates."
           else
             git commit -m "📰 Auto-generated news posts - $(date +'%Y-%m-%d %H:%M UTC')"
-            git push
+            git push origin main
           fi
