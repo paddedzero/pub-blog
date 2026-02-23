@@ -12,7 +12,7 @@
 
   export let content: string = '';
   export let title: string = 'Audio Playback';
-  export let articleUrl: string = '';
+  export let scrollTargetSelector: string = 'article'; // CSS selector for scroll target
 
   let isSupported = false;
   let isPlaying = false;
@@ -307,6 +307,13 @@
     seekTo(Math.max(0, Math.min(100, percentage)));
   }
 
+  function scrollToArticle() {
+    const target = document.querySelector(scrollTargetSelector);
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
   async function sharePosition() {
     const url = new URL(window.location.href);
     url.searchParams.set('audiotime', Math.floor(currentTime).toString());
@@ -598,30 +605,27 @@
                 <span class="text-muted-foreground">Starting...</span>
               {/if}
             </p>
-            {#if articleUrl}
-              <a
-                href={articleUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                class="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary/80 hover:underline transition-colors"
-                aria-label="Read full article in new tab"
+            <button
+              type="button"
+              on:click={scrollToArticle}
+              class="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary/80 hover:underline transition-colors cursor-pointer bg-none border-none p-0"
+              aria-label="Scroll to article content"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                </svg>
-                Read Article
-              </a>
-            {/if}
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+              Read Article
+            </button>
           </div>
         </div>
       </div>
