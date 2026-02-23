@@ -358,6 +358,16 @@
     scrollToArticle();
   }
 
+  function scrollToArticle() {
+    const selector = scrollTargetSelector || '#article-content';
+    const element = document.querySelector(selector);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      console.warn(`Could not find element with selector: ${selector}`);
+    }
+  }
+
   async function sharePosition() {
     const url = new URL(window.location.href);
     url.searchParams.set('audiotime', Math.floor(currentTime).toString());
