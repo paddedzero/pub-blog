@@ -379,9 +379,29 @@
     console.log('[AudioPlayer] scrollToArticle called with selector:', selector);
     const element = document.querySelector(selector);
     console.log('[AudioPlayer] Found element:', element);
+    
     if (element) {
-      console.log('[AudioPlayer] Scrolling to element');
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      console.log('[AudioPlayer] Scrolling to element with offset for sticky player');
+      
+      // Get the closest sticky parent (the player itself) to calculate offset
+      const stickyPlayer = document.querySelector('.audio-player.sticky');
+      let stickyOffset = 0;
+      
+      if (stickyPlayer) {
+        stickyOffset = stickyPlayer.getBoundingClientRect().height;
+        console.log('[AudioPlayer] Sticky player height:', stickyOffset);
+      }
+      
+      // Calculate position accounting for sticky header
+      const rect = element.getBoundingClientRect();
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      const targetScroll = scrollTop + rect.top - stickyOffset - 20; // Extra 20px padding
+      
+      console.log('[AudioPlayer] Target scroll position:', targetScroll);
+      window.scrollTo({
+        top: targetScroll,
+        behavior: 'smooth'
+      });
     } else {
       console.error(`[AudioPlayer] Element not found with selector: ${selector}`);
       // Try alternate selectors for debugging
