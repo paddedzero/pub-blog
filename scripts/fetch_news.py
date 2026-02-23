@@ -1102,6 +1102,188 @@ def consolidate_similar_entries(entries, config):
     return consolidated
 
 
+# --- CVE Reference Section Separation (Option 3a) ---
+
+def is_cve_article(entry):
+    """Check if an article is a CVE reference (not editorial content).
+    
+    CVE articles are detected by:
+    1. Category is "CVE" or "Vulnerability"
+    2. Title contains CVE-XXXX-XXXXX pattern
+    """
+    # Check category
+    category = entry.get('_article_category', '').lower()
+    if category in ['cve', 'vulnerability']:
+        return True
+    
+    # Check title for CVE pattern
+    title = (entry.get('title') or '').upper()
+    if re.search(r'CVE-\d{4}-\d+', title):
+        return True
+    
+    return False
+
+
+def extract_cve_references(entries):
+    """Separate CVE articles from editorial content.
+    
+    Returns:
+        (cve_articles, editorial_articles) - two lists
+    """
+    cve_articles = []
+    editorial_articles = []
+    
+    for entry in entries:
+        if is_cve_article(entry):
+            cve_articles.append(entry)
+        else:
+            editorial_articles.append(entry)
+    
+    return cve_articles, editorial_articles
+
+
+def format_cve_reference_section(cve_entries):
+    """Format CVE articles as a clean reference table (not editorial).
+    
+    Minimal formatting for quick scanning:
+    - CVE ID
+    - Severity (if available)
+    - Product/Component
+    - Source link
+    
+    Returns:
+        markdown string or empty string if no CVEs
+    """
+    if not cve_entries:
+        return ""
+    
+    # Extract unique CVEs (deduplicate if same CVE listed multiple times)
+    seen_cves = {}
+    
+    for entry in cve_entries:
+        title = entry.get('title', '')
+        link = entry.get('link', '')
+        
+        # Extract CVE ID
+        cve_match = re.search(r'(CVE-\d{4}-\d+)', title, re.IGNORECASE)
+        if not cve_match:
+            continue
+        
+        cve_id = cve_match.group(1).upper()
+        
+        # Extract severity if mentioned in title
+        severity = "Unknown"
+        severity_patterns = {
+            'CRITICAL': ['critical', '9\\.0|9\\.\\d{1,2}|cvss.*9'],
+            'HIGH': ['high', 'critical vulnerability', 'cvss.*[789]'],
+            'MEDIUM': ['medium', 'moderate'],
+            'LOW': ['low']
+        }
+        
+        title_lower = title.lower()
+        for sev_level, patterns in severity_patterns.items():
+            if any(re.search(p, title_lower) for p in patterns):
+                severity = sev_level
+                break
+        
+        # Extract product name (usually after CVE ID or in parentheses)
+        product = "Unknown"
+        if '(' in title and ')' in title:
+            product_match = re.search(r'\(([^)]+)\)', title)
+            if product_match:
+                product = product_match.group(1).strip()[:40]
+        else:
+            # Try to find product name after the CVE ID
+            parts = title.split(cve_id)
+            if len(parts) > 1:
+                product_text = parts[1].strip()
+                # Take first few words as product name
+                product_words = product_text.split()[:3]
+                product = ' '.join(product_words)[:40]
+        
+        # Prioritize newer/official sources (NVD) over duplicates
+        if cve_id not in seen_cves:
+            seen_cves[cve_id] = {
+                'cve_id': cve_id,
+                'severity': severity,
+                'product': product,
+                'link': link,
+                'source': entry.get('_source_name', 'Unknown')
+            }
+        else:
+            # If new source is NVD, prioritize it
+            if 'nvd' in entry.get('_source_name', '').lower():
+                seen_cves[cve_id] = {
+                    'cve_id': cve_id,
+                    'severity': severity,
+                    'product': product,
+                    'link': link,
+                    'source': entry.get('_source_name', 'Unknown')
+                }
+    
+    if not seen_cves:
+        return ""
+    
+    # Sort by CVE ID (newest first - higher numbers)
+    sorted_cves = sorted(seen_cves.values(), 
+                        key=lambda x: tuple(map(int, x['cve_id'].split('-')[1:])),
+                        reverse=True)
+    
+    # Format as markdown table
+    table_rows = [
+        "| CVE ID | Severity | Product | Source |",
+        "|--------|----------|---------|--------|"
+    ]
+    
+    severity_emoji = {
+        'CRITICAL': '🔴',
+        'HIGH': '🟠',
+        'MEDIUM': '🟡',
+        'LOW': '🔵',
+        'Unknown': '⚪'
+    }
+    
+    for cve in sorted_cves:
+        severity_display = f"{severity_emoji.get(cve['severity'], '⚪')} {cve['severity']}"
+        
+        # Create clickable CVE ID link
+        if cve['link']:
+            safe_link = sanitize_url(cve['link'])
+            cve_link = f"[{cve['cve_id']}]({safe_link})" if safe_link else cve['cve_id']
+        else:
+            # Fallback to NVD link
+            cve_link = f"[{cve['cve_id']}](https://nvd.nist.gov/vuln/detail/{cve['cve_id']})"
+        
+        product_display = cve['product'][:35]
+        source_display = cve['source'][:15]
+        
+        table_rows.append(
+            f"| {cve_link} | {severity_display} | {product_display} | {source_display} |"
+        )
+    
+    # Wrap in a collapsible section
+    table_body = "\n".join(table_rows)
+    
+    cve_section = f"""
+<details class="group border-t border-border/50 py-4 mt-8">
+  <summary class="cursor-pointer hover:bg-secondary/30 transition-colors list-none flex items-center gap-2 py-2 px-2">
+    <span class="text-lg font-bold text-foreground">📋 CVE Reference Bulletin</span>
+    <span class="text-xs text-muted-foreground">({len(sorted_cves)} vulnerabilities)</span>
+    <span class="text-muted-foreground text-xs shrink-0 group-open:rotate-180 transition-transform ml-auto">▼</span>
+  </summary>
+  <div class="p-3 bg-secondary/10 rounded-md mt-3 text-sm mx-2 overflow-x-auto">
+    <p class="text-muted-foreground text-xs mb-2">⚠️ Reference material: Click CVE IDs for full details. Severity indicators are approximate classifications.</p>
+    
+{table_body}
+    
+    <p class="text-muted-foreground text-xs mt-3 italic">💡 Tip: Use the <strong>CVE ID</strong> column as a quick reference. For detailed analysis, also check the editorial sections above for deeper coverage of significant vulnerabilities.</p>
+  </div>
+</details>
+"""
+    
+    return cve_section.strip()
+
+
 def format_entries_for_category(entries, exclude_urls=None):
     """Format entries as markdown for a category, newest first.
     Groups similar articles to reduce noise.
@@ -1214,10 +1396,15 @@ def format_entries_for_category(entries, exclude_urls=None):
     return "\n\n".join(formatted)
 
 
-def create_news_brief(date_str, content_by_category, highlights):
+def create_news_brief(date_str, content_by_category, highlights, cve_reference_section=""):
     """Create a single news brief post with Top highlights.
 
     Filename includes local HH-MM to avoid collisions and include time.
+    Args:
+        date_str: date string (YYYY-MM-DD)
+        content_by_category: dict of category -> formatted entries
+        highlights: list of (entry, count) tuples for top articles
+        cve_reference_section: optional CVE bulletin section (HTML/markdown)
     """
     POSTS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -1305,6 +1492,10 @@ aiGenerated: true
     for category in sorted(content_by_category.keys()):
         body += f"## {category}\n\n"
         body += content_by_category[category] + "\n\n"
+    
+    # Option 3a: Add CVE reference section at the end
+    if cve_reference_section:
+        body += "\n" + cve_reference_section + "\n"
 
     with open(filename, "w", encoding="utf-8") as f:
         f.write(front_matter + body)
@@ -1816,7 +2007,7 @@ def create_narrative_briefing(highlights):
     return briefing
 
 
-def create_weekly_scan_post(date_str, content_by_category, highlights):
+def create_weekly_scan_post(date_str, content_by_category, highlights, cve_reference_section=""):
     """
     Create the Weekly Scan post (aggregated news with trend metrics).
     
@@ -1988,6 +2179,10 @@ showComments: false
     for category in sorted(content_by_category.keys()):
         body += f"## {category}\n\n"
         body += content_by_category[category] + "\n\n"
+    
+    # Option 3a: Add CVE reference section at the end
+    if cve_reference_section:
+        body += "\n" + cve_reference_section + "\n"
 
     with open(filename, "w", encoding="utf-8") as f:
         f.write(front_matter + body)
@@ -2551,16 +2746,27 @@ def main():
     highlight_urls = extract_highlight_urls(top_highlights)
     logging.info("Excluding %d highlight articles from category sections to prevent duplicates", len(highlight_urls))
     
+    # Option 3a: Extract and separate CVE references from editorial content
+    all_cve_articles = []
     content_by_category = {}
     for cat, entries in reports.items():
-        content_by_category[cat] = format_entries_for_category(entries, exclude_urls=highlight_urls)
+        # Separate CVEs from editorial content
+        cve_articles, editorial_articles = extract_cve_references(entries)
+        all_cve_articles.extend(cve_articles)
+        
+        # Format editorial content only (CVEs get their own section)
+        content_by_category[cat] = format_entries_for_category(editorial_articles, exclude_urls=highlight_urls)
+    
+    # Generate CVE reference section (if any CVEs found)
+    cve_reference_section = format_cve_reference_section(all_cve_articles)
+    logging.info("[CVE] Extracted %d CVE references for separate bulletin", len(all_cve_articles))
 
     # Phase 2: Dual-post output (Weekly Scan + Analyst Opinion + Story Clusters)
     phase2_enabled = config.get("synthesis", {}).get("enable_opinion_post", False)
     
     if phase2_enabled:
         # Create Weekly Scan post (with Story Clusters briefing + consolidated threat intel/vulnerability)
-        weekly_scan_file = create_weekly_scan_post(today, content_by_category, top_highlights)
+        weekly_scan_file = create_weekly_scan_post(today, content_by_category, top_highlights, cve_reference_section)
         logging.info("%s [PHASE 2] Weekly Scan generated: %s", GREEN, weekly_scan_file)
         
         # Detect trending category for analyst opinion
@@ -2582,7 +2788,7 @@ def main():
         logging.info("%s News aggregation complete: Weekly Scan (with Story Clusters) + Analyst Opinion posts generated", GREEN)
     else:
         # Legacy Phase 1: Single post (news brief)
-        create_news_brief(today, content_by_category, top_highlights)
+        create_news_brief(today, content_by_category, top_highlights, cve_reference_section)
         logging.info("%s [PHASE 1] News brief generated with %d articles across %d categories", GREEN, matched_entries, len(reports))
         
         # Option 2: Update cross-run dedup registry with all published articles

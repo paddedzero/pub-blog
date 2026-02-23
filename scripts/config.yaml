@@ -722,6 +722,13 @@ cross_run_dedup:
   registry_dir: ".article_registry"  # Store article registry locally
   keep_registry_days: 60       # Keep article registry for 60 days (prevents repeats for ~8 weeks)
 
+cve_reference_section:
+  enabled: true                # Separate CVE articles into dedicated reference bulletin
+  strategy: "separate"         # Extract CVEs from editorial content (Option 3a)
+  severity_emoji: true         # Use severity indicators (🔴 CRITICAL, 🟠 HIGH, etc)
+  sort_by: "cve_id"           # Sort CVEs by ID (newest first)
+  dedup_by: "cve_id"          # Deduplicate identical CVEs from multiple sources
+
 batch_processing:
   enabled: true
   gemini_batch_size: 5         # Summarize 5 articles per API call
