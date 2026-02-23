@@ -50,5 +50,6 @@ jobs:
             echo "No new posts generated. Either no articles matched filters or all were duplicates."
           else
             git commit -m "📰 Auto-generated news posts - $(date +'%Y-%m-%d %H:%M UTC')"
+            git pull origin main --no-edit
             git push origin main
           fi
