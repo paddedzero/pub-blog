@@ -148,8 +148,7 @@ const appearances = (await getCollection('appearances'))
               const isExternal = project.data.directLink;
               const projectUrl = isExternal ? project.data.link : toPath(`/projects/${project.id}`);
               const target = isExternal ? '_blank' : '_self';
-            <a
-              href={toPath('projects')}
+              return (
                 <article class="flex flex-col h-full p-6 rounded-2xl bg-secondary/30 border border-border/50 hover:bg-secondary/50 hover:border-border transition-all duration-300 group">
                   <div class="flex-1">
                     <a
