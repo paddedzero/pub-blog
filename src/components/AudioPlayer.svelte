@@ -259,7 +259,7 @@
 
 {#if isSupported && content}
   <div
-    class="audio-player sticky top-16 z-40 mb-6 rounded-xl border border-border bg-background/95 backdrop-blur-sm shadow-lg overflow-hidden"
+    class="audio-player sticky top-16 z-40 mb-6 rounded-xl border border-border bg-background/95 backdrop-blur-sm shadow-lg"
   >
     <!-- Main Player Controls -->
     <div class="p-4">
