@@ -36,6 +36,7 @@
   let shareSuccess = false;
   let progressBarElement: HTMLElement | null = null;
   let currentUtteranceIndex = 0;
+  let needsUtteranceRecreation = true; // Start as true for first play
 
   // Speed options
   const speedOptions = [
@@ -120,6 +121,8 @@
     totalChunks = chunks.length;
     utterances = [];
 
+    console.log('Preparing utterances with voice:', selectedVoice?.name || 'default'); // Debug
+
     chunks.forEach((chunk, index) => {
       const utterance = new SpeechSynthesisUtterance(chunk);
       utterance.rate = playbackRate;
@@ -177,25 +180,29 @@
   function play(fromIndex: number = 0) {
     if (!synth || !cleanedText) return;
 
-    if (isPaused && fromIndex === 0) {
-      // Resume from pause
+    // Resume if just paused and no changes needed
+    if (isPaused && !needsUtteranceRecreation && fromIndex === currentUtteranceIndex) {
       synth.resume();
       isPlaying = true;
       isPaused = false;
-    } else {
-      // Start fresh or from specific index
-      if (fromIndex > 0 || utterances.length === 0) {
-        prepareUtterances();
-      }
-      isPlaying = true;
-      isPaused = false;
-      currentChunkIndex = fromIndex;
-      currentUtteranceIndex = fromIndex;
+      console.log('Resuming playback');
+      return;
+    }
 
-      // Speak utterances from the specified index
-      for (let i = fromIndex; i < utterances.length; i++) {
-        synth.speak(utterances[i]);
-      }
+    // Otherwise recreate utterances
+    prepareUtterances();
+    needsUtteranceRecreation = false;
+    
+    isPlaying = true;
+    isPaused = false;
+    currentChunkIndex = fromIndex;
+    currentUtteranceIndex = fromIndex;
+
+    console.log('Playing from index', fromIndex, 'with voice:', selectedVoice?.name); // Debug
+    
+    // Speak utterances from the specified index
+    for (let i = fromIndex; i < utterances.length; i++) {
+      synth.speak(utterances[i]);
     }
   }
 
@@ -226,21 +233,35 @@
   }
 
   function changeSpeed(newRate: number) {
-    const wasPlaying = isPlaying;
-    stop();
     playbackRate = newRate;
-    if (wasPlaying) {
-      play();
+    needsUtteranceRecreation = true;
+    
+    const wasPlaying = isPlaying;
+    const wasPaused = isPaused;
+    const savedIndex = currentUtteranceIndex;
+    
+    if (wasPlaying || wasPaused) {
+      stop();
+      setTimeout(() => {
+        play(savedIndex);
+      }, 50);
     }
   }
 
   function selectVoice(voice: SpeechSynthesisVoice) {
-    const wasPlaying = isPlaying;
-    const savedIndex = currentUtteranceIndex;
-    stop();
     selectedVoice = voice;
     showVoiceSelector = false;
-    if (wasPlaying) {
+    needsUtteranceRecreation = true;
+    console.log('Voice selected:', voice.name, voice.lang); // Debug log
+    
+    const wasPlaying = isPlaying;
+    const wasPaused = isPaused;
+    const savedIndex = currentUtteranceIndex;
+    
+    // Always stop and recreate utterances with new voice
+    stop();
+    
+    if (wasPlaying || wasPaused) {
       setTimeout(() => {
         play(savedIndex);
       }, 100);
@@ -256,6 +277,7 @@
 
     // Stop current playback
     stop();
+    needsUtteranceRecreation = true;
 
     // Update progress indicators
     currentChunkIndex = targetIndex;
@@ -271,7 +293,6 @@
     } else {
       // Just update the position
       isPaused = true;
-      prepareUtterances();
     }
   }
 
