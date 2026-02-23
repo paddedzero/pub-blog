@@ -76,9 +76,6 @@ sources:
   - name: ASPI Cyber Tech Security Digest
     url: https://aspicts.substack.com/feed
     category: "Cybersecurity"
-  - name: Security Affairs
-    url: https://securityaffairs.co/wordpress/feed
-    category: "Cybersecurity"
   - name: Bruce Schneier Blog
     url: https://www.schneier.com/blog/atom.xml
     category: "Cybersecurity"
@@ -563,6 +560,81 @@ log_level: "DEBUG"
 fuzz_threshold: 0.8
 max_per_domain: 2
 max_results: 10
+
+# === Source Tier Configuration (Domain Diversity Enhancement) ===
+source_tiers:
+  tier_1:  # Authoritative sources (no limit)
+    domains:
+      - nvd.nist.gov
+      - cisa.gov
+      - us-cert.cisa.gov
+      - cert.org
+      - kb.cert.org
+      - nist.gov
+      - cve.mitre.org
+    max_articles: 999
+  
+  tier_2:  # Vendor research & threat intel (3 max)
+    domains:
+      - unit42.paloaltonetworks.com
+      - blog.talosintelligence.com
+      - talosintelligence.com
+      - crowdstrike.com
+      - mandiant.com
+      - googleprojectzero.blogspot.com
+      - blog.qualys.com
+      - recordedfuture.com
+      - rapid7.com
+      - tenable.com
+    max_articles: 3
+  
+  tier_3:  # News aggregators & security media (2 max)
+    domains:
+      - bleepingcomputer.com
+      - thehackernews.com
+      - securityweek.com
+      - darkreading.com
+      - therecord.media
+      - cyberscoop.com
+      - techcrunch.com
+      - arstechnica.com
+      - zdnet.com
+      - krebsonsecurity.com
+    max_articles: 2
+  
+  tier_4:  # Personal blogs & opinion sites (1 max)
+    domains:
+      - doublepulsar.com
+      - troyhunt.com
+      - schneier.com
+      - grahamcluley.com
+      - danielmiessler.com
+      - shostack.org
+      - taosecurity.blogspot.com
+      - erratasec.com
+    max_articles: 1
+
+# === Per-Category Fuzzy Thresholds (Smart Deduplication) ===
+fuzzy_thresholds:
+  "Threat Intel & Vulnerability": 0.92  # Very strict (different CVEs should not merge)
+  "Cybersecurity": 0.80                 # Moderate (general security news)
+  "AI & LLM": 0.75                      # Relaxed (opinions, trends can merge)
+  "Cloud": 0.80                          # Moderate (product updates)
+  "Cyber Regulatory": 0.85              # Stricter (different regulations)
+  "Tech": 0.75                          # Relaxed (broad tech topics)
+  "Security Vendor Blog": 0.80          # Moderate
+  "Scraping Candidates": 0.80           # Moderate
+
+# === Time-Based Weighting (Breaking News Prioritization) ===
+recency_boost:
+  enabled: true
+  breaking_news_hours: 6      # Articles < 6 hours old
+  breaking_multiplier: 3.0    # 3× boost for breaking news
+  same_day_hours: 24          # Articles < 24 hours old
+  same_day_multiplier: 2.0    # 2× boost for same day
+  recent_hours: 72            # Articles < 72 hours old
+  recent_multiplier: 1.5      # 1.5× boost for recent
+  default_multiplier: 1.0     # No boost for older
 
 # === Gemini API Configuration (Phase 1: Summarization) ===
 gemini:

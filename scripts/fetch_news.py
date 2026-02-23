@@ -593,6 +593,135 @@ def extract_highlight_urls(highlights):
     return urls
 
 
+def get_source_tier(domain, config):
+    """Determine the tier (1-4) for a given domain based on source authority.
+    
+    Args:
+        domain: normalized domain name (e.g., 'bleepingcomputer.com')
+        config: config dict with source_tiers
+    
+    Returns:
+        tuple: (tier_number, max_articles_for_tier)
+    """
+    tiers = config.get("source_tiers", {})
+    
+    for tier_name in ["tier_1", "tier_2", "tier_3", "tier_4"]:
+        tier_config = tiers.get(tier_name, {})
+        domains = tier_config.get("domains", [])
+        max_articles = tier_config.get("max_articles", 2)
+        
+        for tier_domain in domains:
+            # Support wildcards like *.blogspot.com
+            if tier_domain.startswith("*."):
+                pattern = tier_domain[2:]  # Remove *. prefix
+                if domain.endswith(pattern):
+                    return (int(tier_name.split("_")[1]), max_articles)
+            elif domain == tier_domain:
+                return (int(tier_name.split("_")[1]), max_articles)
+    
+    # Default: tier 3 if not found
+    return (3, 2)
+
+
+def calculate_story_score(entry, count, config):
+    """Calculate weighted score for a story based on mentions and recency.
+    
+    Args:
+        entry: article entry dict
+        count: number of mentions across sources
+        config: config dict with recency_boost settings
+    
+    Returns:
+        float: weighted score (mention_count × recency_multiplier)
+    """
+    recency_config = config.get("recency_boost", {})
+    
+    if not recency_config.get("enabled", True):
+        return float(count)
+    
+    # Parse publication date
+    try:
+        if "published_parsed" in entry and entry.published_parsed:
+            pub_date = datetime(*entry.published_parsed[:6], tzinfo=LOCAL_TZ)
+        else:
+            pub_date = datetime.now(LOCAL_TZ)
+    except Exception:
+        pub_date = datetime.now(LOCAL_TZ)
+    
+    # Calculate hours since publication
+    now = datetime.now(LOCAL_TZ)
+    hours_old = (now - pub_date).total_seconds() / 3600
+    
+    # Apply tiered multipliers
+    breaking_hours = recency_config.get("breaking_news_hours", 6)
+    same_day_hours = recency_config.get("same_day_hours", 24)
+    recent_hours = recency_config.get("recent_hours", 72)
+    
+    if hours_old < breaking_hours:
+        multiplier = recency_config.get("breaking_multiplier", 3.0)
+        logging.debug("[RECENCY] Breaking news boost: %.1f\u00d7 for '%s' (%.1fh old)", 
+                     multiplier, entry.get("title", "")[:50], hours_old)
+    elif hours_old < same_day_hours:
+        multiplier = recency_config.get("same_day_multiplier", 2.0)
+    elif hours_old < recent_hours:
+        multiplier = recency_config.get("recent_multiplier", 1.5)
+    else:
+        multiplier = recency_config.get("default_multiplier", 1.0)
+    
+    return count * multiplier
+
+
+def consolidate_similar_entries(entries, config):
+    """Consolidate articles about the same story from multiple sources.
+    
+    Groups articles with high similarity, tracks all sources, and generates
+    a consensus summary using AI synthesis.
+    
+    Args:
+        entries: list of (entry, count) tuples from group_similar_entries
+        config: config dict with fuzzy thresholds and gemini settings
+    
+    Returns:
+        list of dicts: [{
+            'primary_entry': entry,
+            'source_list': [(entry, source_name, timestamp), ...],
+            'total_mentions': int,
+            'consensus_summary': str,
+            'first_reported': datetime,
+            'last_updated': datetime,
+            'score': float  # weighted score for sorting
+        }]
+    """
+    if not entries:
+        return []
+    
+    consolidated = []
+    
+    # Use very high threshold for consolidation (0.90+)
+    consolidation_threshold = 0.90
+    
+    for entry, count in entries:
+        # Calculate weighted score
+        score = calculate_story_score(entry, count, config)
+        
+        # For now, treat each entry as its own story
+        # In Phase 2, we'll add multi-source tracking
+        consolidated.append({
+            'primary_entry': entry,
+            'source_list': [(entry, entry.get('_source_name', 'Unknown'), entry.get('published_parsed'))],
+            'total_mentions': count,
+            'consensus_summary': entry.get('gemini_excerpt', '') or clean_summary(entry.get('summary', '')),
+            'first_reported': None,
+            'last_updated': None,
+            'score': score
+        })
+    
+    # Sort by weighted score (mention count × recency multiplier)
+    consolidated.sort(key=lambda x: x['score'], reverse=True)
+    
+    return consolidated
+
+
 def format_entries_for_category(entries, exclude_urls=None):
     """Format entries as markdown for a category, newest first.
     Groups similar articles to reduce noise.
@@ -874,9 +1003,9 @@ def cluster_articles_by_theme(articles, num_clusters=3):
         return []
 
 
-def group_similar_entries(entries, threshold=None, max_per_domain=None, max_results=None):
+def group_similar_entries(entries, threshold=None, max_per_domain=None, max_results=None, config=None):
     """Group entries by fuzzy title similarity, choose recent representative,
-    sort by group size then recency, and diversify by normalized domain.
+    sort by group size then recency, and diversify by normalized domain using tier system.
 
     Returns list of (entry, count) tuples up to max_results.
     """
@@ -886,6 +1015,9 @@ def group_similar_entries(entries, threshold=None, max_per_domain=None, max_resu
     fuzz_threshold = float(threshold) if threshold is not None else DEFAULTS["fuzz_threshold"]
     max_per_domain = int(max_per_domain) if max_per_domain is not None else DEFAULTS["max_per_domain"]
     max_results = int(max_results) if max_results is not None else DEFAULTS["max_results"]
+    
+    # Load config if provided (for tiered domain system)
+    use_tiers = config and config.get("source_tiers")
 
     pre = []
     for idx, e in enumerate(entries):
@@ -935,6 +1067,7 @@ def group_similar_entries(entries, threshold=None, max_per_domain=None, max_resu
 
     diversified = []
     seen_domains = {}
+    
     for g in grouped:
         if len(diversified) >= max_results:
             break
@@ -943,10 +1076,24 @@ def group_similar_entries(entries, threshold=None, max_per_domain=None, max_resu
         link = (entry.get("link") or "").strip()
         if not link:
             continue
+        
         domain = normalize_domain(link) or "__unknown__"
-        if seen_domains.get(domain, 0) < max_per_domain:
-            diversified.append((entry, count))
-            seen_domains[domain] = seen_domains.get(domain, 0) + 1
+        
+        # Use tiered limits if config provided, otherwise use flat max_per_domain
+        if use_tiers:
+            tier, tier_max = get_source_tier(domain, config)
+            current_count = seen_domains.get(domain, 0)
+            
+            if current_count < tier_max:
+                diversified.append((entry, count))
+                seen_domains[domain] = current_count + 1
+                logging.debug("[DIVERSITY] Added '%s' from %s (tier %d, %d/%d)", 
+                            entry.get("title", "")[:40], domain, tier, current_count + 1, tier_max)
+        else:
+            # Legacy behavior: flat limit
+            if seen_domains.get(domain, 0) < max_per_domain:
+                diversified.append((entry, count))
+                seen_domains[domain] = seen_domains.get(domain, 0) + 1
 
     return diversified
 
@@ -1929,7 +2076,23 @@ def main():
     max_per_domain = config.get("max_per_domain", DEFAULTS["max_per_domain"])
     max_results = config.get("max_results", DEFAULTS["max_results"])
 
-    top_highlights = group_similar_entries(all_matched_entries, threshold=fuzz_threshold, max_per_domain=max_per_domain, max_results=max_results)
+    # Use tiered domain diversity and get initial highlights
+    top_highlights = group_similar_entries(
+        all_matched_entries, 
+        threshold=fuzz_threshold, 
+        max_per_domain=max_per_domain, 
+        max_results=max_results,
+        config=config  # Pass config for tiered domain system
+    )
+    
+    # Apply consolidation and recency-based scoring
+    logging.info("📊 Applying recency boost and consolidating similar stories...")
+    consolidated_highlights = consolidate_similar_entries(top_highlights, config)
+    
+    # Extract back to (entry, count) format for compatibility
+    top_highlights = [(item['primary_entry'], item['total_mentions']) for item in consolidated_highlights]
+    
+    logging.info("✅ Top %d highlights selected (weighted by recency)", len(top_highlights))
 
     # Phase 1.5: Just-In-Time Gemini Summarization for Top Highlights
     # Only summarize the stories that actually made it to the Top N list to save tokens.

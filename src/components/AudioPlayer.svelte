@@ -34,6 +34,8 @@
   let currentSentence = '';
   let textChunks: string[] = [];
   let shareSuccess = false;
+  let progressBarElement: HTMLElement | null = null;
+  let currentUtteranceIndex = 0;
 
   // Speed options
   const speedOptions = [
@@ -129,8 +131,9 @@
 
       utterance.onstart = () => {
         currentChunkIndex = index;
+        currentUtteranceIndex = index;
         // Extract first sentence for display (up to 150 chars)
-        const firstSentence = chunk.split(/[.!?]/)[0];
+        const firstSentence = chunk.split(/[.!?\n]/)[0].trim();
         currentSentence = firstSentence.substring(0, 150) + (firstSentence.length > 150 ? '...' : '');
         updateProgress();
       };
@@ -144,6 +147,9 @@
           progress = 0;
           currentTime = 0;
           currentSentence = '';
+        } else {
+          // Move to next chunk
+          currentUtteranceIndex = index + 1;
         }
       };
 
@@ -165,24 +171,28 @@
     }
   }
 
-  function play() {
+  function play(fromIndex: number = 0) {
     if (!synth || !cleanedText) return;
 
-    if (isPaused) {
-      // Resume
+    if (isPaused && fromIndex === 0) {
+      // Resume from pause
       synth.resume();
       isPlaying = true;
       isPaused = false;
     } else {
-      // Start fresh
-      prepareUtterances();
+      // Start fresh or from specific index
+      if (fromIndex > 0 || utterances.length === 0) {
+        prepareUtterances();
+      }
       isPlaying = true;
       isPaused = false;
+      currentChunkIndex = fromIndex;
+      currentUtteranceIndex = fromIndex;
 
-      // Speak all utterances in sequence
-      utterances.forEach((utterance) => {
-        synth.speak(utterance);
-      });
+      // Speak utterances from the specified index
+      for (let i = fromIndex; i < utterances.length; i++) {
+        synth.speak(utterances[i]);
+      }
     }
   }
 
@@ -222,12 +232,53 @@
 
   function selectVoice(voice: SpeechSynthesisVoice) {
     const wasPlaying = isPlaying;
+    const savedIndex = currentUtteranceIndex;
     stop();
     selectedVoice = voice;
     showVoiceSelector = false;
     if (wasPlaying) {
-      play();
+      setTimeout(() => {
+        play(savedIndex);
+      }, 100);
     }
+  }
+
+  function seekTo(percentage: number) {
+    if (!synth || totalChunks === 0) return;
+
+    // Calculate which chunk corresponds to this percentage
+    const targetIndex = Math.floor((percentage / 100) * totalChunks);
+    const wasPlaying = isPlaying;
+
+    // Stop current playback
+    stop();
+
+    // Update progress indicators
+    currentChunkIndex = targetIndex;
+    currentUtteranceIndex = targetIndex;
+    progress = (targetIndex / totalChunks) * 100;
+    currentTime = (progress / 100) * totalTime;
+
+    // Start playing from this position if we were playing
+    if (wasPlaying) {
+      setTimeout(() => {
+        play(targetIndex);
+      }, 100);
+    } else {
+      // Just update the position
+      isPaused = true;
+      prepareUtterances();
+    }
+  }
+
+  function handleProgressBarClick(e: MouseEvent) {
+    if (!progressBarElement) return;
+
+    const rect = progressBarElement.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const percentage = (x / rect.width) * 100;
+
+    seekTo(Math.max(0, Math.min(100, percentage)));
   }
 
   async function sharePosition() {
@@ -329,7 +380,24 @@
           </div>
 
           <!-- Progress Bar -->
-          <div class="relative h-2 bg-secondary rounded-full overflow-hidden">
+          <div
+            bind:this={progressBarElement}
+            on:click={handleProgressBarClick}
+            class="relative h-2 bg-secondary rounded-full overflow-hidden cursor-pointer hover:h-3 transition-all"
+            role="slider"
+            aria-label="Audio progress"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow={progress}
+            tabindex="0"
+            on:keydown={(e) => {
+              if (e.key === 'ArrowLeft') {
+                seekTo(Math.max(0, progress - 5));
+              } else if (e.key === 'ArrowRight') {
+                seekTo(Math.min(100, progress + 5));
+              }
+            }}
+          >
             <div
               class="absolute top-0 left-0 h-full bg-primary transition-all duration-300"
               style="width: {progress}%"
@@ -338,7 +406,7 @@
 
           <div class="flex items-center justify-between mt-2">
             <span class="text-xs text-muted-foreground">
-              ~{estimatedMinutes} min read • Use ← → for speed
+              ~{estimatedMinutes} min read • Click bar to seek • Use ← → for speed
             </span>
 
             <!-- Speed Controls -->
