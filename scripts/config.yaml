@@ -729,6 +729,21 @@ cve_reference_section:
   sort_by: "cve_id"           # Sort CVEs by ID (newest first)
   dedup_by: "cve_id"          # Deduplicate identical CVEs from multiple sources
 
+micro_topic_tagging:
+  enabled: true                # Extract 3-5 tech tags per article using Gemini (Option 3b)
+  strategy: "editorial"        # Only tag editorial articles, not CVEs
+  tags_per_article: 5          # Extract up to 5 tags per article
+  cost_per_article_tokens: 200 # Estimated Gemini token cost (~1-2 cents per article)
+  cache_enabled: true          # Cache tags in article metadata to avoid re-extraction
+
+trending_topics_dashboard:
+  enabled: true                # Show trending topics across featured articles (Option 3c)
+  strategy: "tag_frequency"    # Aggregate from article tags (zero Gemini cost)
+  critical_threshold: 5        # Show as "critical" if 5+ sources mention
+  active_threshold: 3          # Show as "active" if 3-4 sources
+  min_tags_to_display: 2       # Only show topics with 2+ source mentions
+  display_location: "after_categories"  # Show before CVE bulletin
+
 batch_processing:
   enabled: true
   gemini_batch_size: 5         # Summarize 5 articles per API call

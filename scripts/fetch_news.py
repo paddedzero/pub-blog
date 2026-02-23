@@ -1284,6 +1284,209 @@ def format_cve_reference_section(cve_entries):
     return cve_section.strip()
 
 
+# --- Micro-Topic Tagging (Option 3b) ---
+
+def extract_article_tags(entry, config):
+    """Extract 3-5 technical tags from an article using Gemini.
+    
+    Uses cached tags if available. Only extracts tags for editorial content,
+    not for CVE references (which use the CVE ID as tag).
+    
+    Args:
+        entry: feedparser entry dict
+        config: configuration dict
+        
+    Returns:
+        list of tag strings, or empty list if extraction fails
+    """
+    # Skip tagging if disabled
+    tagging_config = config.get("micro_topic_tagging", {})
+    if not tagging_config.get("enabled", False):
+        return []
+    
+    # Skip if already tagged
+    if entry.get('_tags'):
+        return entry.get('_tags', [])
+    
+    # Skip CVE articles (use CVE ID as tag instead)
+    if is_cve_article(entry):
+        cve_match = re.search(r'CVE-\d{4}-\d+', entry.get('title', ''), re.IGNORECASE)
+        if cve_match:
+            return [f"CVE-{cve_match.group(0).upper().split('-')[1]}"]  # e.g., "CVE-2026"
+        return []
+    
+    # Use Gemini to extract tags if available
+    if not (GEMINI_CLIENT and GEMINI_AVAILABLE):
+        return []
+    
+    title = entry.get('title', '')
+    summary = entry.get('summary', '') or entry.get('description', '')
+    
+    # Truncate to save tokens
+    summary = summary[:300] if summary else ''
+    
+    try:
+        prompt = f"""Extract 3-5 technical tags from this tech news article. 
+Tags should be specific technical concepts (technologies, methodologies, vendors, practices).
+Return as JSON: {{"tags": ["tag1", "tag2", ...]}}
+
+Article Title: {title}
+Article Summary: {summary}
+
+Return ONLY valid JSON, no other text."""
+        
+        response = GEMINI_CLIENT.models.generate_content(prompt)
+        response_text = response.text.strip()
+        
+        # Parse JSON response
+        import json
+        data = json.loads(response_text)
+        tags = data.get('tags', [])
+        
+        # Limit to 5 tags, lowercase for consistency
+        tags = [t.lower()[:30] for t in tags[:5] if t and isinstance(t, str)]
+        
+        if tags:
+            entry['_tags'] = tags  # Cache in entry
+            logging.debug(f"[TAGS] Extracted {len(tags)} tags for: {title[:60]}")
+            return tags
+    except Exception as e:
+        logging.debug(f"[TAGS] Failed to extract tags: {str(e)[:100]}")
+        return []
+    
+    return []
+
+
+def build_trending_topics_dashboard(reports, top_highlights, config):
+    """Build a trending topics dashboard from article tags and frequency.
+    
+    Analyzes which technical topics appear most frequently across the week,
+    grouped by urgency/impact level.
+    
+    Args:
+        reports: dict of category -> entries
+        top_highlights: list of (entry, count) tuples 
+        config: configuration dict
+        
+    Returns:
+        markdown string with dashboard visualization
+    """
+    dashboard_config = config.get("trending_topics_dashboard", {})
+    if not dashboard_config.get("enabled", False):
+        return ""
+    
+    tagging_config = config.get("micro_topic_tagging", {})
+    if not tagging_config.get("enabled", False):
+        return ""  # Need tagging enabled for this
+    
+    # Collect all tags and their frequency
+    tag_frequency = {}  # {tag: {count, sources, articles}}
+    
+    all_entries = []
+    for entries in reports.values():
+        all_entries.extend(entries)
+    
+    # Count tag occurrences
+    for entry in all_entries:
+        tags = entry.get('_tags', [])
+        for tag in tags:
+            if tag not in tag_frequency:
+                tag_frequency[tag] = {
+                    'count': 0,
+                    'sources': set(),
+                    'articles': []
+                }
+            tag_frequency[tag]['count'] += 1
+            tag_frequency[tag]['sources'].add(entry.get('_source_name', 'Unknown'))
+            tag_frequency[tag]['articles'].append(entry.get('title', '')[:50])
+    
+    if not tag_frequency:
+        return ""  # No tags found
+    
+    # Categorize by urgency (based on frequency and highlight mention)
+    critical_tags = []  # 5+ sources or in top highlights
+    active_tags = []    # 3-4 sources
+    emerging_tags = []  # 2 sources
+    
+    highlight_tags = set()
+    for entry, count in top_highlights:
+        for tag in entry.get('_tags', []):
+            if count >= 3:  # Only count high-mention articles
+                highlight_tags.add(tag)
+    
+    for tag, data in sorted(tag_frequency.items(), key=lambda x: x[1]['count'], reverse=True):
+        source_count = len(data['sources'])
+        if tag in highlight_tags or source_count >= 5:
+            critical_tags.append((tag, source_count, data['count']))
+        elif source_count >= 3:
+            active_tags.append((tag, source_count, data['count']))
+        elif source_count >= 2:
+            emerging_tags.append((tag, source_count, data['count']))
+    
+    if not any([critical_tags, active_tags, emerging_tags]):
+        return ""  # Nothing to display
+    
+    # Build markdown dashboard
+    dashboard = """
+<details class="group border-t border-border/50 py-4 mt-8">
+  <summary class="cursor-pointer hover:bg-secondary/30 transition-colors list-none flex items-center gap-2 py-2 px-2">
+    <span class="text-lg font-bold text-foreground">📊 This Week's Trending Topics</span>
+    <span class="text-muted-foreground text-xs shrink-0 group-open:rotate-180 transition-transform ml-auto">▼</span>
+  </summary>
+  <div class="p-3 bg-secondary/10 rounded-md mt-3 text-sm mx-2">
+"""
+    
+    # Critical trends
+    if critical_tags:
+        dashboard += """    <div class="mb-4">
+      <p class="text-xs font-semibold text-destructive mb-2">🔴 CRITICAL TRENDS (5+ sources tracked)</p>
+      <ul class="list-none space-y-1.5 ml-2">
+"""
+        for tag, source_count, count in critical_tags[:5]:
+            dashboard += f"""        <li class="text-xs text-muted-foreground">
+          <strong class="text-foreground">{tag}</strong> <span class="text-xs text-primary">({source_count} sources, {count} mentions)</span>
+        </li>
+"""
+        dashboard += """      </ul>
+    </div>
+"""
+    
+    # Active trends
+    if active_tags:
+        dashboard += """    <div class="mb-4">
+      <p class="text-xs font-semibold text-orange-500 mb-2">🟠 ACTIVE DEVELOPMENTS (3-4 sources)</p>
+      <ul class="list-none space-y-1 ml-2">
+"""
+        for tag, source_count, count in active_tags[:4]:
+            dashboard += f"""        <li class="text-xs text-muted-foreground">{tag} <span class="text-xs text-primary">({source_count} sources)</span></li>
+"""
+        dashboard += """      </ul>
+    </div>
+"""
+    
+    # Emerging
+    if emerging_tags:
+        dashboard += """    <div class="mb-4">
+      <p class="text-xs font-semibold text-amber-600 mb-2">🟡 EMERGING TOPICS (2 sources)</p>
+      <ul class="list-none space-y-1 ml-2">
+"""
+        for tag, source_count, count in emerging_tags[:4]:
+            dashboard += f"""        <li class="text-xs text-muted-foreground">{tag}</li>
+"""
+        dashboard += """      </ul>
+    </div>
+"""
+    
+    dashboard += """    <p class="text-muted-foreground text-xs mt-4 italic border-t border-border/50 pt-3">
+      💡 Insight: These topics represent areas of significant industry activity this week. Track these for strategic security planning.
+    </p>
+  </div>
+</details>
+"""
+    
+    return dashboard.strip()
+
+
 def format_entries_for_category(entries, exclude_urls=None):
     """Format entries as markdown for a category, newest first.
     Groups similar articles to reduce noise.
@@ -1396,7 +1599,7 @@ def format_entries_for_category(entries, exclude_urls=None):
     return "\n\n".join(formatted)
 
 
-def create_news_brief(date_str, content_by_category, highlights, cve_reference_section=""):
+def create_news_brief(date_str, content_by_category, highlights, cve_reference_section="", trending_dashboard=""):
     """Create a single news brief post with Top highlights.
 
     Filename includes local HH-MM to avoid collisions and include time.
@@ -1405,6 +1608,7 @@ def create_news_brief(date_str, content_by_category, highlights, cve_reference_s
         content_by_category: dict of category -> formatted entries
         highlights: list of (entry, count) tuples for top articles
         cve_reference_section: optional CVE bulletin section (HTML/markdown)
+        trending_dashboard: optional trending topics dashboard (HTML/markdown)
     """
     POSTS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -1492,6 +1696,10 @@ aiGenerated: true
     for category in sorted(content_by_category.keys()):
         body += f"## {category}\n\n"
         body += content_by_category[category] + "\n\n"
+    
+    # Option 3c: Add trending topics dashboard (if enabled)
+    if trending_dashboard:
+        body += "\n" + trending_dashboard + "\n\n"
     
     # Option 3a: Add CVE reference section at the end
     if cve_reference_section:
@@ -2007,7 +2215,7 @@ def create_narrative_briefing(highlights):
     return briefing
 
 
-def create_weekly_scan_post(date_str, content_by_category, highlights, cve_reference_section=""):
+def create_weekly_scan_post(date_str, content_by_category, highlights, cve_reference_section="", trending_dashboard=""):
     """
     Create the Weekly Scan post (aggregated news with trend metrics).
     
@@ -2179,6 +2387,10 @@ showComments: false
     for category in sorted(content_by_category.keys()):
         body += f"## {category}\n\n"
         body += content_by_category[category] + "\n\n"
+    
+    # Option 3c: Add trending topics dashboard (if enabled)
+    if trending_dashboard:
+        body += "\n" + trending_dashboard + "\n\n"
     
     # Option 3a: Add CVE reference section at the end
     if cve_reference_section:
@@ -2737,6 +2949,17 @@ def main():
                 entry['keywords_hit'] = summary_data['keywords_hit']
             except Exception as e:
                 logging.warning("   Failed to summarize: %s", str(e))
+    
+    # Option 3b: Extract micro-topic tags from editorial articles
+    tagging_config = config.get("micro_topic_tagging", {})
+    if tagging_config.get("enabled", False) and gemini_enabled and GEMINI_CLIENT:
+        logging.info("🏷️  Extracting micro-topic tags from %d articles...", len(all_matched_entries))
+        tags_extracted = 0
+        for entry in all_matched_entries:
+            tags = extract_article_tags(entry, config)
+            if tags:
+                tags_extracted += 1
+        logging.info("🏷️  Tags extracted: %d articles tagged", tags_extracted)
 
     now_local = datetime.now(LOCAL_TZ)
     yesterday = now_local - timedelta(days=1)
@@ -2760,13 +2983,18 @@ def main():
     # Generate CVE reference section (if any CVEs found)
     cve_reference_section = format_cve_reference_section(all_cve_articles)
     logging.info("[CVE] Extracted %d CVE references for separate bulletin", len(all_cve_articles))
+    
+    # Option 3c: Generate trending topics dashboard (if tagging enabled)
+    trending_dashboard = build_trending_topics_dashboard(reports, top_highlights, config)
+    if trending_dashboard:
+        logging.info("[TRENDING] Trending topics dashboard generated")
 
     # Phase 2: Dual-post output (Weekly Scan + Analyst Opinion + Story Clusters)
     phase2_enabled = config.get("synthesis", {}).get("enable_opinion_post", False)
     
     if phase2_enabled:
         # Create Weekly Scan post (with Story Clusters briefing + consolidated threat intel/vulnerability)
-        weekly_scan_file = create_weekly_scan_post(today, content_by_category, top_highlights, cve_reference_section)
+        weekly_scan_file = create_weekly_scan_post(today, content_by_category, top_highlights, cve_reference_section, trending_dashboard)
         logging.info("%s [PHASE 2] Weekly Scan generated: %s", GREEN, weekly_scan_file)
         
         # Detect trending category for analyst opinion
@@ -2788,7 +3016,7 @@ def main():
         logging.info("%s News aggregation complete: Weekly Scan (with Story Clusters) + Analyst Opinion posts generated", GREEN)
     else:
         # Legacy Phase 1: Single post (news brief)
-        create_news_brief(today, content_by_category, top_highlights, cve_reference_section)
+        create_news_brief(today, content_by_category, top_highlights, cve_reference_section, trending_dashboard)
         logging.info("%s [PHASE 1] News brief generated with %d articles across %d categories", GREEN, matched_entries, len(reports))
         
         # Option 2: Update cross-run dedup registry with all published articles
