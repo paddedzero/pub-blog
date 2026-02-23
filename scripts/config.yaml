@@ -716,6 +716,12 @@ feed_caching:
   cache_dir: ".feed_cache"     # Store feed metadata locally
   expire_after: 604800         # Refresh cache every 7 days (seconds)
 
+cross_run_dedup:
+  enabled: true
+  strategy: "persistent"       # Track articles across weekly runs
+  registry_dir: ".article_registry"  # Store article registry locally
+  keep_registry_days: 60       # Keep article registry for 60 days (prevents repeats for ~8 weeks)
+
 batch_processing:
   enabled: true
   gemini_batch_size: 5         # Summarize 5 articles per API call

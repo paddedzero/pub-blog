@@ -1,0 +1,16 @@
+{
+  "d286577fc35f842cccbfb756771a0179ece9eddbfa59171646669e42eea0c7a8": {
+    "title": "Critical Database Vulnerability",
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-12345",
+    "source": "NVD",
+    "published_date": "2026-02-23T16:22:56.157607-05:00",
+    "category": "CVE"
+  },
+  "e3761d3ba51cd8a8117d8cdc47f3c00e8c3fdba12f30dd5f0c04c9ca840bc9eb": {
+    "title": "Patch Tuesday Security Update",
+    "url": "https://example.com/security-update",
+    "source": "SecurityBlog",
+    "published_date": "2026-02-23T16:22:56.157607-05:00",
+    "category": "Cybersecurity"
+  }
+}

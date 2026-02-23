@@ -6,6 +6,8 @@ import logging
 import os
 import textwrap
 import base64
+import hashlib
+import json
 from datetime import datetime, timedelta
 from pathlib import Path
 from urllib.parse import urlparse
@@ -654,6 +656,124 @@ def entry_matches(entry, pattern, config=None):
         return False  # Blocked by negative filter
     
     return True
+
+
+# --- Cross-Run Duplicate Prevention (Option 2 Improvement) ---
+
+def init_article_registry():
+    """Initialize article registry directory for tracking published articles across runs."""
+    registry_dir = Path(".article_registry")
+    if not registry_dir.exists():
+        try:
+            registry_dir.mkdir(parents=True, exist_ok=True)
+            logging.debug("Article registry directory initialized")
+        except Exception as e:
+            logging.warning(f"Failed to create article registry: {e}")
+
+
+def load_article_registry():
+    """Load the persistent article registry (tracks all published articles)."""
+    registry_file = Path(".article_registry") / "articles.json"
+    if not registry_file.exists():
+        return {}  # Empty registry
+    
+    try:
+        with open(registry_file, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception as e:
+        logging.warning(f"Failed to load article registry: {e}")
+        return {}
+
+
+def save_article_registry(registry):
+    """Save the persistent article registry."""
+    registry_dir = Path(".article_registry")
+    registry_dir.mkdir(parents=True, exist_ok=True)
+    registry_file = registry_dir / "articles.json"
+    
+    try:
+        with open(registry_file, 'w', encoding='utf-8') as f:
+            json.dump(registry, f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        logging.debug(f"Failed to save article registry: {e}")
+
+
+def generate_article_hash(entry):
+    """Generate a stable hash for an article based on its URL and title."""
+    url = entry.get("link") or entry.get("id") or ""
+    title = entry.get("title") or ""
+    
+    # Combine URL and title for hash
+    combined = f"{url}#{title}".lower()
+    return hashlib.sha256(combined.encode()).hexdigest()
+
+
+def is_duplicate_article(entry, registry, registry_config):
+    """Check if article has already been published in a previous run.
+    
+    Args:
+        entry: feedparser entry
+        registry: article registry dict
+        registry_config: config section for cross_run_dedup
+    
+    Returns:
+        (bool, str): (is_duplicate, reason)
+    """
+    article_hash = generate_article_hash(entry)
+    
+    if article_hash not in registry:
+        return False, ""  # Not a duplicate
+    
+    published_date = registry[article_hash]['published_date']
+    keep_days = registry_config.get("keep_registry_days", 60)
+    
+    try:
+        # Parse previously published date
+        pub_datetime = datetime.fromisoformat(published_date)
+        age_days = (datetime.now(LOCAL_TZ) - pub_datetime.replace(tzinfo=LOCAL_TZ)).days
+        
+        if age_days < keep_days:
+            reason = f"Published {age_days} days ago"
+            return True, reason
+        else:
+            # Old article, safe to republish
+            return False, f"Article from {age_days} days ago (outside {keep_days}-day window)"
+    except Exception as e:
+        logging.debug(f"Error checking article age: {e}")
+        return True, "Registry error"
+
+
+def update_registry_with_completed_run(entries_in_post, registry, config):
+    """Update registry after a successful post generation with published articles."""
+    registry_config = config.get("cross_run_dedup", {})
+    now = datetime.now(LOCAL_TZ).isoformat()
+    
+    for entry in entries_in_post:
+        article_hash = generate_article_hash(entry)
+        registry[article_hash] = {
+            'title': entry.get('title', '')[:100],
+            'url': entry.get('link') or entry.get('id') or '',
+            'source': entry.get('_source_name', 'unknown'),
+            'published_date': now,
+            'category': entry.get('_article_category', 'general')
+        }
+    
+    # Clean up old entries (older than keep_registry_days)
+    keep_days = registry_config.get("keep_registry_days", 60)
+    new_registry = {}
+    
+    for article_hash, data in registry.items():
+        try:
+            pub_datetime = datetime.fromisoformat(data['published_date'])
+            age_days = (datetime.now(LOCAL_TZ) - pub_datetime.replace(tzinfo=LOCAL_TZ)).days
+            if age_days < keep_days:
+                new_registry[article_hash] = data
+        except Exception:
+            # Keep entries with parsing errors
+            new_registry[article_hash] = data
+    
+    save_article_registry(new_registry)
+    return new_registry
 
 
 def clean_summary(html):
@@ -2232,6 +2352,14 @@ def main():
         init_feed_cache()
         logging.info("[CACHE] Feed incremental caching enabled")
 
+    # Option 2: Initialize cross-run deduplication (if enabled)
+    cross_run_dedup_config = config.get("cross_run_dedup", {})
+    article_registry = {}
+    if cross_run_dedup_config.get("enabled", False):
+        init_article_registry()
+        article_registry = load_article_registry()
+        logging.info("[DEDUP] Cross-run duplicate detection enabled (registry size: %d articles)", len(article_registry))
+    
     # Group 2: Initialize semantic deduplication (if enabled)
     semantic_config = config.get("semantic_deduplication", {})
     if semantic_config.get("enabled", False) and SEMANTIC_AVAILABLE:
@@ -2332,6 +2460,13 @@ def main():
                 if entry_matches(entry, pattern, config):  # Pass config for negative keyword filtering
                     matched_count += 1
                     matched_entries += 1
+                    
+                    # Option 2: Check if article is a duplicate from previous runs
+                    if cross_run_dedup_config.get("enabled", False):
+                        is_dup, reason = is_duplicate_article(entry, article_registry, cross_run_dedup_config)
+                        if is_dup:
+                            logging.debug(f"    [DEDUP] Skipping duplicate: {entry.get('title', '')[:50]}... ({reason})")
+                            continue
                     
                     # Store source name for attribution
                     entry['_source_name'] = feed_name
@@ -2439,11 +2574,21 @@ def main():
         else:
             logging.warning("[PHASE 2] Could not detect trending category; skipping opinion post")
         
+        # Option 2: Update cross-run dedup registry with all published articles
+        if cross_run_dedup_config.get("enabled", False):
+            article_registry = update_registry_with_completed_run(all_matched_entries, article_registry, config)
+            logging.info("[DEDUP] Article registry updated: %d articles tracked", len(article_registry))
+        
         logging.info("%s News aggregation complete: Weekly Scan (with Story Clusters) + Analyst Opinion posts generated", GREEN)
     else:
         # Legacy Phase 1: Single post (news brief)
         create_news_brief(today, content_by_category, top_highlights)
         logging.info("%s [PHASE 1] News brief generated with %d articles across %d categories", GREEN, matched_entries, len(reports))
+        
+        # Option 2: Update cross-run dedup registry with all published articles
+        if cross_run_dedup_config.get("enabled", False):
+            article_registry = update_registry_with_completed_run(all_matched_entries, article_registry, config)
+            logging.info("[DEDUP] Article registry updated: %d articles tracked", len(article_registry))
 
 
 if __name__ == "__main__":
