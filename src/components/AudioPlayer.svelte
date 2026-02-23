@@ -12,6 +12,7 @@
 
   export let content: string = '';
   export let title: string = 'Audio Playback';
+  export let articleUrl: string = '';
 
   let isSupported = false;
   let isPlaying = false;
@@ -589,13 +590,39 @@
             <path d="m21 8-4-4-4 4" />
             <path d="M17 4v16" />
           </svg>
-          <span class="flex-1">
-            {#if currentSentence}
-              {currentSentence}
-            {:else}
-              <span class="text-muted-foreground">Starting...</span>
+          <div class="flex-1">
+            <p class="mb-2">
+              {#if currentSentence}
+                {currentSentence}
+              {:else}
+                <span class="text-muted-foreground">Starting...</span>
+              {/if}
+            </p>
+            {#if articleUrl}
+              <a
+                href={articleUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary/80 hover:underline transition-colors"
+                aria-label="Read full article in new tab"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
+                Read Article
+              </a>
             {/if}
-          </span>
+          </div>
         </div>
       </div>
     {/if}

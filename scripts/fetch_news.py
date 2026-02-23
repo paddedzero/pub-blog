@@ -23,6 +23,15 @@ from urllib3.util.retry import Retry
 # Web scraping module for non-RSS feeds
 from scraper import scrape_site, is_scraping_candidate
 
+# Semantic deduplication (Group 2 improvement)
+try:
+    from sentence_transformers import SentenceTransformer
+    from scipy.spatial.distance import cosine
+    SEMANTIC_AVAILABLE = True
+except ImportError:
+    SEMANTIC_AVAILABLE = False
+    logging.warning("sentence-transformers or scipy not installed; semantic deduplication disabled")
+
 # Gemini API for summarization (Phase 1) - using new google-genai SDK
 try:
     from google import genai
@@ -61,6 +70,11 @@ DEFAULTS = {
 SESSION = None  # requests.Session for HTTP calls
 GEMINI_CLIENT = None  # google.genai.Client for summarization (new SDK)
 
+# Semantic model & embedding cache (initialized on demand)
+SEMANTIC_MODEL = None  # SentenceTransformer model
+EMBEDDING_CACHE = {}  # {text_hash: embedding_vector}
+SEMANTIC_CACHE_DIR = Path(".semantic_cache")  # Cache directory for embeddings
+
 
 def load_config():
     try:
@@ -74,10 +88,23 @@ def load_config():
         return {}
 
 
-def compile_keywords_pattern(keywords):
+def compile_keywords_pattern(keywords, config=None):
+    """Compile keywords into regex pattern, with optional synonym expansion (Group 2.2).
+    
+    If config provided, expands keywords using synonym_map.
+    Returns regex pattern or None (if no keywords, matches everything).
+    """
     # If no keywords configured, return None -> match everything
     if not keywords:
         return None
+    
+    # Expand keywords with synonyms if config available
+    if config:
+        keywords = expand_keywords_with_synonyms(keywords, config)
+    
+    # Remove duplicates while preserving order
+    keywords = list(dict.fromkeys(keywords))
+    
     escaped = [re.escape(k) for k in keywords]
     pattern = r"(?i)\b(" + "|".join(escaped) + r")\b"
     return re.compile(pattern)
@@ -375,13 +402,48 @@ def fetch_feed_entries(url, feed_name, category="General"):
         return [], msg
 
 
-def entry_matches(entry, pattern):
-    # If pattern is None => no keywords configured -> match everything
-    if pattern is None:
-        return True
+def expand_keywords_with_synonyms(keywords, config):
+    """Expand keywords using synonym map from config (Group 2.2).
+    Returns list of all keywords including original + expanded synonyms."""
+    if not keywords:
+        return []
+    
+    keyword_expansion = config.get("keyword_expansion", {})
+    if not keyword_expansion.get("enabled"):
+        return keywords  # No expansion
+    
+    synonym_map = keyword_expansion.get("synonym_map", {})
+    depth = keyword_expansion.get("expansion_depth", 1)
+    
+    expanded = set(keywords)
+    
+    # Simple one-pass expansion (depth=1 covers 90% of cases)
+    for keyword in keywords:
+        key_lower = keyword.lower()
+        if key_lower in synonym_map:
+            expanded.update(synonym_map[key_lower])
+        # Also check if keyword matches a key in the map (case-insensitive)
+        for map_key, synonyms in synonym_map.items():
+            if key_lower == map_key.lower():
+                expanded.update(synonyms)
+    
+    return list(expanded)
 
-    parts = [entry.get("title", ""), entry.get("summary", ""), entry.get("description", "")]
-    # include common content blocks
+
+def matches_negative_keywords(entry, config):
+    """Check if entry matches negative keyword filter (Group 2.3).
+    Returns True if entry should be FILTERED OUT (blocked).
+    """
+    negative_config = config.get("negative_keywords", {})
+    if not negative_config.get("enabled"):
+        return False  # Not filtering anything
+    
+    # Gather all text from entry
+    parts = [
+        entry.get("title", ""),
+        entry.get("summary", ""),
+        entry.get("description", ""),
+    ]
     try:
         content = entry.get("content")
         if content:
@@ -391,9 +453,121 @@ def entry_matches(entry, pattern):
                 parts.append(str(content))
     except Exception:
         pass
-
+    
     text_to_check = " ".join([p for p in parts if p]).lower()
-    return bool(pattern.search(text_to_check))
+    
+    # Check block terms (case-insensitive)
+    block_terms = negative_config.get("block_terms", [])
+    for term in block_terms:
+        if term.lower() in text_to_check:
+            logging.debug(f"Article blocked by negative keyword: {term}")
+            return True
+    
+    # Check block domains (URL-based blocking with wildcard support)
+    link = entry.get("link", "").lower()
+    block_domains = negative_config.get("block_domains", [])
+    for pattern in block_domains:
+        pattern_lower = pattern.lower()
+        if pattern_lower.startswith("*."):
+            # Wildcard match: *.medium.com matches any.medium.com
+            domain_part = pattern_lower[2:]  # Remove "*."
+            if domain_part in link:
+                logging.debug(f"Article blocked by domain pattern: {pattern}")
+                return True
+        else:
+            # Exact domain match
+            if pattern_lower in link:
+                logging.debug(f"Article blocked by domain pattern: {pattern}")
+                return True
+    
+    return False
+
+
+def get_semantic_model():
+    """Load semantic model on demand (lazy initialization)."""
+    global SEMANTIC_MODEL
+    if SEMANTIC_MODEL is not None:
+        return SEMANTIC_MODEL
+    
+    if not SEMANTIC_AVAILABLE:
+        logging.warning("Semantic model requested but sentence-transformers not available")
+        return None
+    
+    try:
+        model_name = "all-MiniLM-L6-v2"  # Fast, lightweight model ~22MB
+        logging.info(f"Loading semantic model: {model_name}")
+        SEMANTIC_MODEL = SentenceTransformer(model_name)
+        return SEMANTIC_MODEL
+    except Exception as e:
+        logging.error(f"Failed to load semantic model: {e}")
+        return None
+
+
+def semantic_similarity(text1, text2, config=None):
+    """Compute semantic similarity between two texts (0-1 range).
+    Returns 1.0 if texts are identical, 0.0 if completely different.
+    Falls back to fuzzy matching if semantic model unavailable.
+    """
+    if not text1 or not text2:
+        return 0.0
+    
+    model = get_semantic_model()
+    if model is None:
+        # Fall back to fuzzy matching
+        return rf_ratio(text1.lower(), text2.lower()) / 100.0
+    
+    try:
+        embeddings = model.encode([text1, text2], convert_to_tensor=False)
+        # Compute cosine similarity (1 - cosine_distance)
+        similarity = 1 - cosine(embeddings[0], embeddings[1])
+        return float(similarity)
+    except Exception as e:
+        logging.warning(f"Semantic similarity computation failed: {e}; falling back to fuzzy")
+        return rf_ratio(text1.lower(), text2.lower()) / 100.0
+
+
+def init_feed_cache():
+    """Initialize feed cache directory for incremental fetch tracking."""
+    if Path(".feed_cache").exists():
+        return
+    try:
+        Path(".feed_cache").mkdir(parents=True, exist_ok=True)
+        logging.debug("Feed cache directory initialized")
+    except Exception as e:
+        logging.warning(f"Failed to create feed cache: {e}")
+
+
+def entry_matches(entry, pattern, config=None):
+    """Check if entry matches keyword pattern AND passes negative keyword filter."""
+    
+    # First check: Does it match positive keywords?
+    # If pattern is None => no keywords configured -> match everything
+    if pattern is None:
+        positive_match = True
+    else:
+        parts = [entry.get("title", ""), entry.get("summary", ""), entry.get("description", "")]
+        # include common content blocks
+        try:
+            content = entry.get("content")
+            if content:
+                if isinstance(content, list):
+                    parts += [c.get("value", "") if isinstance(c, dict) else str(c) for c in content]
+                else:
+                    parts.append(str(content))
+        except Exception:
+            pass
+
+        text_to_check = " ".join([p for p in parts if p]).lower()
+        positive_match = bool(pattern.search(text_to_check))
+    
+    if not positive_match:
+        return False
+    
+    # Second check: Does it match negative keywords (block list)?
+    if config and matches_negative_keywords(entry, config):
+        return False  # Blocked by negative filter
+    
+    return True
 
 
 def clean_summary(html):
@@ -1032,6 +1206,15 @@ def group_similar_entries(entries, threshold=None, max_per_domain=None, max_resu
             pub = datetime.now(LOCAL_TZ)
         pre.append({"idx": idx, "entry": e, "title_l": title_l, "pub": pub})
 
+    # Determine if we should use semantic deduplication
+    use_semantic = False
+    if config:
+        semantic_config = config.get("semantic_deduplication", {})
+        use_semantic = semantic_config.get("enabled", False) and SEMANTIC_AVAILABLE
+        if use_semantic:
+            semantic_threshold = semantic_config.get("similarity_threshold", 0.92)
+            logging.info("[SEMANTIC] Semantic deduplication enabled (threshold: %.2f)", semantic_threshold)
+
     grouped = []
     used = set()
 
@@ -1043,7 +1226,13 @@ def group_similar_entries(entries, threshold=None, max_per_domain=None, max_resu
         for other in pre[i+1:]:
             if other["idx"] in used:
                 continue
-            score = rf_ratio(item["title_l"], other["title_l"]) / 100.0
+            
+            # Use semantic similarity if enabled, otherwise fall back to fuzzy matching
+            if use_semantic:
+                score = semantic_similarity(item["title_l"], other["title_l"], config)
+            else:
+                score = rf_ratio(item["title_l"], other["title_l"]) / 100.0
+            
             if score >= fuzz_threshold:
                 group_indices.append(other["idx"])
                 used.add(other["idx"])
@@ -1951,6 +2140,21 @@ def main():
         status_forcelist=config.get("request_status_forcelist", DEFAULTS["request_status_forcelist"]),
     )
 
+    # Group 4: Initialize feed caching system (if enabled)
+    feed_cache_config = config.get("feed_caching", {})
+    if feed_cache_config.get("enabled", False):
+        init_feed_cache()
+        logging.info("[CACHE] Feed incremental caching enabled")
+
+    # Group 2: Initialize semantic deduplication (if enabled)
+    semantic_config = config.get("semantic_deduplication", {})
+    if semantic_config.get("enabled", False) and SEMANTIC_AVAILABLE:
+        init_feed_cache()  # Cache dir for embeddings
+        logging.info("[SEMANTIC] Semantic deduplication will be used (model: %s)", 
+                    semantic_config.get("model", "all-MiniLM-L6-v2"))
+    elif semantic_config.get("enabled", False) and not SEMANTIC_AVAILABLE:
+        logging.warning("[SEMANTIC] Semantic deduplication requested but sentence-transformers not available")
+
     # Phase 1: Initialize Gemini API for summarization (if enabled and API key provided)
     gemini_config = config.get("gemini", {})
     gemini_api_key = os.environ.get("GEMINI_API_KEY", gemini_config.get("api_key", ""))
@@ -1975,7 +2179,7 @@ def main():
 
     keywords = config.get("filters", {}).get("keywords", [])
     sources = config.get("sources", [])
-    pattern = compile_keywords_pattern(keywords)
+    pattern = compile_keywords_pattern(keywords, config)  # Pass config for keyword expansion
 
     logging.info("Configuration: sources=%d, keywords=%s, gemini_enabled=%s", len(sources), keywords, gemini_enabled)
 
@@ -1985,9 +2189,12 @@ def main():
     total_entries = 0
     recent_entries = 0
     matched_entries = 0
-    cutoff_date = datetime.now(LOCAL_TZ) - timedelta(days=30)
+    
+    # Get lookback days from config (default: 7 days for weekly scans)
+    lookback_days = config.get("lookback_days", 7)
+    cutoff_date = datetime.now(LOCAL_TZ) - timedelta(days=lookback_days)
 
-    logging.debug("Looking for entries after: %s", cutoff_date.strftime('%Y-%m-%d'))
+    logging.debug("Looking for entries after: %s (last %d days)", cutoff_date.strftime('%Y-%m-%d'), lookback_days)
 
     for i, source in enumerate(sources, 1):
         feed_name = source.get("name", source.get("url"))
@@ -2033,7 +2240,7 @@ def main():
                 recent_count += 1
                 recent_entries += 1
 
-                if entry_matches(entry, pattern):
+                if entry_matches(entry, pattern, config):  # Pass config for negative keyword filtering
                     matched_count += 1
                     matched_entries += 1
                     
@@ -2067,7 +2274,7 @@ def main():
         if errors == len(sources):
             logging.warning("  - All feeds failed to load")
         elif recent_entries == 0:
-            logging.warning("  - No articles published in last 30 days")
+            logging.warning("  - No articles published in last %d days", lookback_days)
         elif matched_entries == 0:
             logging.warning("  - No articles matched keywords; try broader keywords")
         return

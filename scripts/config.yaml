@@ -636,9 +636,96 @@ filters:
     - "Cambodia PDPA"
 
 log_level: "DEBUG"
+lookback_days: 7              # Only fetch articles from last N days (weekly scans = 7 days)
 fuzz_threshold: 0.8
 max_per_domain: 2
 max_results: 10
+
+# === Group 2: Content Quality & Filtering ===
+semantic_deduplication:
+  enabled: true
+  model: "all-MiniLM-L6-v2"     # Lightweight, fast embedding model
+  similarity_threshold: 0.92    # 0-1 score for semantic similarity
+  use_cache: true              # Cache embeddings to disk
+
+keyword_expansion:
+  enabled: true
+  expansion_depth: 1            # 1 = direct synonyms, 2 = synonyms of synonyms
+  
+  synonym_map:
+    vulnerability: [exploit, flaw, weakness, bug, defect, CVE, cve]
+    breach: ["data leak", incident, intrusion, compromise, hack, infiltration]
+    ransomware: ["encryption attack", extortion, "WannaCry-like", cryptolocker]
+    attack: [exploit, campaign, incident, threat, intrusion]
+    rce: ["remote code execution", "code execution", shell, privilege_escalation]
+    Zero-day: ["0-day", unpatched, undisclosed]
+    patch: [update, release, hotfix, security_update]
+    ai_safety: ["AI security", "LLM security", "prompt injection", alignment]
+
+negative_keywords:
+  enabled: true
+  # Articles with these terms are FILTERED OUT
+  block_terms:
+    # PR & Marketing
+    - "press release"
+    - "announces partnership"
+    - "is pleased to announce"
+    - "excited to introduce"
+    - "new product launch"
+    - "we're thrilled"
+    - "partnership announcement"
+    - "customer success story"
+    
+    # Learning & Educational
+    - "tutorial"
+    - "how-to guide"
+    - "getting started"
+    - "learn"
+    - "course"
+    - "certification"
+    - "webinar"
+    - "workshop"
+    - "training session"
+    
+    # Case Studies & Whitepapers
+    - "case study"
+    - "white paper"
+    - "whitepaper"
+    - "testimonial"
+    - "success story"
+    - "customer spotlight"
+    - "deep dive"
+    
+    # Industry Events
+    - "conference"
+    - "summit"
+    - "expo"
+    - "keynote"
+    - "event coverage"
+  
+  block_domains:
+    - "*.medium.com"         # Self-promotion spam
+    - "reddit.com"           # Discussion forums
+    - "*.linkedin.com"       # Sales/networking
+    - "quora.com"            # Q&A noise
+
+# === Group 4: Performance Optimization ===
+feed_caching:
+  enabled: true
+  strategy: "incremental"      # Only fetch new articles since last run
+  cache_dir: ".feed_cache"     # Store feed metadata locally
+  expire_after: 604800         # Refresh cache every 7 days (seconds)
+
+batch_processing:
+  enabled: true
+  gemini_batch_size: 5         # Summarize 5 articles per API call
+  max_batch_wait_seconds: 30   # Don't wait longer than this for batch fill
+
+archive_compression:
+  enabled: true
+  recent_weeks: 8              # Keep last 8 weeks in /latest/
+  archive_dir: "archive"       # Older posts go to archive/YYYY-MM/
+  auto_archive_after_days: 56  # Move posts >56 days old to archive
 
 # === Source Tier Configuration (Domain Diversity Enhancement) ===
 source_tiers:
