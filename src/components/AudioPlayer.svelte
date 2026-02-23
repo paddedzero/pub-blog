@@ -40,6 +40,8 @@
   let currentUtteranceIndex = 0;
   let needsUtteranceRecreation = true; // Start as true for first play
   let chunkToHeadingMap: (string | null)[] = []; // Maps chunk index to heading slug
+  let lastScrollTime = 0;
+  let scrollThrottleMs = 500; // Throttle scrolls to every 500ms
 
   // Speed options
   const speedOptions = [
@@ -321,35 +323,45 @@
   }
 
   function mapChunksToHeadings() {
-    if (headings.length === 0) return [];
+    if (headings.length === 0 || textChunks.length === 0) {
+      return textChunks.map(() => null);
+    }
 
-    // Calculate cumulative character positions for each heading
-    const headingMap = headings.map((h) => ({
-      ...h,
-      textLower: h.text.toLowerCase(),
-    }));
+    // Sort headings by their position in text (using text content matching)
+    const sortedHeadings = headings
+      .map((h) => ({
+        ...h,
+        textLower: h.text.toLowerCase(),
+        position: cleanedText.toLowerCase().indexOf(h.text.toLowerCase()),
+      }))
+      .filter((h) => h.position !== -1)
+      .sort((a, b) => a.position - b.position);
 
-    // For each chunk, find the closest preceding heading
-    const chunkCharCount = cleanedText.split(' ').reduce(
-      (acc, word, idx) => {
-        acc[idx] = (acc[idx - 1] || 0) + word.length + 1;
-        return acc;
-      },
-      {} as Record<number, number>
-    );
+    console.log('Available headings:', sortedHeadings.map((h) => h.text));
 
-    return textChunks.map((chunk) => {
-      // Find heading that matches chunk content
-      const chunkLower = chunk.toLowerCase().substring(0, 100);
+    // For each chunk, find which heading section it belongs to
+    return textChunks.map((chunk, chunkIdx) => {
+      let cumulativeLength = 0;
+      let chunkPosition = 0;
 
-      for (const heading of headingMap) {
-        if (chunkLower.includes(heading.textLower.substring(0, 30))) {
-          return heading.slug;
+      // Calculate this chunk's approximate position in the text
+      for (let i = 0; i < chunkIdx; i++) {
+        cumulativeLength += textChunks[i].length;
+      }
+      chunkPosition = cumulativeLength;
+
+      // Find the heading that precedes this chunk
+      let currentHeading = null;
+      for (const heading of sortedHeadings) {
+        if (heading.position <= chunkPosition) {
+          currentHeading = heading.slug;
+        } else {
+          break;
         }
       }
 
-      // Return last heading as fallback
-      return headingMap[headingMap.length - 1]?.slug || null;
+      console.log(`Chunk ${chunkIdx}: position ~${chunkPosition}, heading: ${currentHeading}`);
+      return currentHeading;
     });
   }
 
@@ -359,17 +371,32 @@
       return;
     }
 
-    // Try to find heading by slug (id or data attribute)
-    const headingElement =
-      document.querySelector(`[id="${slug}"]`) || document.querySelector(`[data-slug="${slug}"]`);
+    // Throttle scrolling to avoid too many scroll events
+    const now = Date.now();
+    if (now - lastScrollTime < scrollThrottleMs) {
+      return;
+    }
+    lastScrollTime = now;
+
+    // Try multiple selector strategies to find heading
+    let headingElement =
+      document.querySelector(`#${slug}`) ||
+      document.querySelector(`[id="${slug}"]`) ||
+      document.querySelector(`[data-slug="${slug}"]`) ||
+      // Also try h1, h2, h3 with text content
+      Array.from(document.querySelectorAll('h1, h2, h3, h4, h5, h6')).find((el) => {
+        return el.textContent?.toLowerCase().includes(slug.toLowerCase());
+      });
 
     if (headingElement) {
-      headingElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      console.log('Scrolled to heading:', slug);
+      // Scroll to element with offset
+      const yOffset = -80; // Account for sticky header
+      const y = headingElement.getBoundingClientRect().top + window.pageYOffset + yOffset;
+      window.scrollTo({ top: y, behavior: 'smooth' });
+      console.log('Scrolled to heading:', slug, headingElement.textContent);
     } else {
-      // Fallback to article if heading not found
+      console.warn('Heading not found:', slug, '- scrolling to article');
       scrollToArticle();
-      console.warn('Heading not found, scrolled to article:', slug);
     }
   }
 
@@ -382,6 +409,12 @@
     } else {
       console.warn('Scroll target not found:', scrollTargetSelector);
     }
+  }
+
+  function manualScrollToHeading() {
+    // Bypass throttle for manual clicks
+    lastScrollTime = 0;
+    scrollToHeading(chunkToHeadingMap[currentUtteranceIndex]);
   }
 
   async function sharePosition() {
@@ -677,7 +710,7 @@
             </p>
             <button
               type="button"
-              on:click={() => scrollToHeading(chunkToHeadingMap[currentUtteranceIndex])}
+              on:click={manualScrollToHeading}
               class="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary/80 hover:underline transition-colors cursor-pointer bg-none border-none p-0"
               aria-label="Scroll to article content"
             >
