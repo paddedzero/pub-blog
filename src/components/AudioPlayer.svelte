@@ -355,16 +355,25 @@
 
   function manualScrollToHeading() {
     // Simply scroll to the article
+    console.log('[AudioPlayer] manualScrollToHeading button clicked');
     scrollToArticle();
   }
 
   function scrollToArticle() {
     const selector = scrollTargetSelector || '#article-content';
+    console.log('[AudioPlayer] scrollToArticle called with selector:', selector);
     const element = document.querySelector(selector);
+    console.log('[AudioPlayer] Found element:', element);
     if (element) {
+      console.log('[AudioPlayer] Scrolling to element');
       element.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } else {
-      console.warn(`Could not find element with selector: ${selector}`);
+      console.error(`[AudioPlayer] Element not found with selector: ${selector}`);
+      // Try alternate selectors for debugging
+      console.log('[AudioPlayer] Trying alternate selectors:');
+      console.log('  - [#article-content]:', document.querySelector('#article-content'));
+      console.log('  - [article]:', document.querySelector('article'));
+      console.log('  - All articles:', document.querySelectorAll('article'));
     }
   }
 
