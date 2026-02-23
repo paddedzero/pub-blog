@@ -40,8 +40,6 @@
   let currentUtteranceIndex = 0;
   let needsUtteranceRecreation = true; // Start as true for first play
   let chunkToHeadingMap: (string | null)[] = []; // Maps chunk index to heading slug
-  let lastScrollTime = 0;
-  let scrollThrottleMs = 500; // Throttle scrolls to every 500ms
 
   // Speed options
   const speedOptions = [
@@ -61,9 +59,6 @@
       estimatedMinutes = estimateReadingTime(cleanedText);
       totalTime = estimatedMinutes * 60;
       textChunks = splitIntoChunks(cleanedText);
-
-      // Map chunks to headings for scrolling
-      chunkToHeadingMap = mapChunksToHeadings();
 
       // Load voices
       availableVoices = await getAvailableVoices();
@@ -131,9 +126,6 @@
 
     console.log('Preparing utterances with voice:', selectedVoice?.name || 'default'); // Debug
 
-    // Map chunks to headings for scrolling
-    chunkToHeadingMap = mapChunksToHeadings();
-
     chunks.forEach((chunk, index) => {
       const utterance = new SpeechSynthesisUtterance(chunk);
       utterance.rate = playbackRate;
@@ -152,10 +144,6 @@
         const firstSentence = sentences[0]?.trim() || chunk.substring(0, 200);
         currentSentence = firstSentence.substring(0, 200) + (firstSentence.length > 200 ? '...' : '');
         console.log('Speaking:', currentSentence); // Debug log
-
-        // Scroll to corresponding heading
-        const headingSlug = chunkToHeadingMap[index];
-        scrollToHeading(headingSlug);
 
         updateProgress();
       };
@@ -365,56 +353,9 @@
     });
   }
 
-  function scrollToHeading(slug: string | null) {
-    if (!slug) {
-      scrollToArticle();
-      return;
-    }
-
-    // Throttle scrolling to avoid too many scroll events
-    const now = Date.now();
-    if (now - lastScrollTime < scrollThrottleMs) {
-      return;
-    }
-    lastScrollTime = now;
-
-    // Try multiple selector strategies to find heading
-    let headingElement =
-      document.querySelector(`#${slug}`) ||
-      document.querySelector(`[id="${slug}"]`) ||
-      document.querySelector(`[data-slug="${slug}"]`) ||
-      // Also try h1, h2, h3 with text content
-      Array.from(document.querySelectorAll('h1, h2, h3, h4, h5, h6')).find((el) => {
-        return el.textContent?.toLowerCase().includes(slug.toLowerCase());
-      });
-
-    if (headingElement) {
-      // Scroll to element with offset
-      const yOffset = -80; // Account for sticky header
-      const y = headingElement.getBoundingClientRect().top + window.pageYOffset + yOffset;
-      window.scrollTo({ top: y, behavior: 'smooth' });
-      console.log('Scrolled to heading:', slug, headingElement.textContent);
-    } else {
-      console.warn('Heading not found:', slug, '- scrolling to article');
-      scrollToArticle();
-    }
-  }
-
-  function scrollToArticle() {
-    const target = document.querySelector(scrollTargetSelector);
-    if (target) {
-      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      target.focus({ preventScroll: true });
-      console.log('Scrolled to article:', scrollTargetSelector);
-    } else {
-      console.warn('Scroll target not found:', scrollTargetSelector);
-    }
-  }
-
   function manualScrollToHeading() {
-    // Bypass throttle for manual clicks
-    lastScrollTime = 0;
-    scrollToHeading(chunkToHeadingMap[currentUtteranceIndex]);
+    // Simply scroll to the article
+    scrollToArticle();
   }
 
   async function sharePosition() {
