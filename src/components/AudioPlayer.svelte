@@ -40,6 +40,7 @@
   let currentUtteranceIndex = 0;
   let needsUtteranceRecreation = true; // Start as true for first play
   let chunkToHeadingMap: (string | null)[] = []; // Maps chunk index to heading slug
+  let headingElements: Map<string, HTMLElement> = new Map(); // Cache heading elements
 
   // Speed options
   const speedOptions = [
@@ -59,6 +60,10 @@
       estimatedMinutes = estimateReadingTime(cleanedText);
       totalTime = estimatedMinutes * 60;
       textChunks = splitIntoChunks(cleanedText);
+
+      // Build heading map and collect heading elements
+      chunkToHeadingMap = mapChunksToHeadings();
+      collectHeadingElements();
 
       // Load voices
       availableVoices = await getAvailableVoices();
@@ -325,45 +330,67 @@
     seekTo(Math.max(0, Math.min(100, percentage)));
   }
 
+  function collectHeadingElements() {
+    // Find all heading elements in the article
+    const article = document.querySelector('#article-content');
+    if (!article) return;
+
+    headingElements.clear();
+    
+    // Collect h2 and h3 headings
+    const headingSelector = 'h2[id], h3[id]';
+    const elements = article.querySelectorAll(headingSelector);
+    
+    elements.forEach((el) => {
+      const id = el.id;
+      if (id) {
+        headingElements.set(id, el as HTMLElement);
+        console.log('[AudioPlayer] Found heading:', id, el.textContent);
+      }
+    });
+    
+    console.log('[AudioPlayer] Total headings found:', headingElements.size);
+  }
+
   function mapChunksToHeadings() {
     if (headings.length === 0 || textChunks.length === 0) {
+      console.log('[AudioPlayer] No headings or chunks available');
       return textChunks.map(() => null);
     }
 
-    // Sort headings by their position in text (using text content matching)
-    const sortedHeadings = headings
-      .map((h) => ({
-        ...h,
-        textLower: h.text.toLowerCase(),
-        position: cleanedText.toLowerCase().indexOf(h.text.toLowerCase()),
-      }))
-      .filter((h) => h.position !== -1)
-      .sort((a, b) => a.position - b.position);
+    // Create a map of text positions to heading slugs
+    const headingPositions: Array<{ slug: string; position: number }> = [];
+    
+    for (const heading of headings) {
+      const position = cleanedText.toLowerCase().indexOf(heading.text.toLowerCase());
+      if (position !== -1) {
+        headingPositions.push({ slug: heading.slug, position });
+        console.log(`[AudioPlayer] Heading "${heading.text}" at position ${position}`);
+      }
+    }
 
-    console.log('Available headings:', sortedHeadings.map((h) => h.text));
+    // Sort by position
+    headingPositions.sort((a, b) => a.position - b.position);
 
-    // For each chunk, find which heading section it belongs to
+    // For each chunk, find which heading it belongs to
     return textChunks.map((chunk, chunkIdx) => {
       let cumulativeLength = 0;
-      let chunkPosition = 0;
 
-      // Calculate this chunk's approximate position in the text
+      // Calculate this chunk's position in the full text
       for (let i = 0; i < chunkIdx; i++) {
         cumulativeLength += textChunks[i].length;
       }
-      chunkPosition = cumulativeLength;
 
-      // Find the heading that precedes this chunk
+      // Find the nearest heading that precedes this chunk
       let currentHeading = null;
-      for (const heading of sortedHeadings) {
-        if (heading.position <= chunkPosition) {
+      for (const heading of headingPositions) {
+        if (heading.position <= cumulativeLength) {
           currentHeading = heading.slug;
         } else {
           break;
         }
       }
 
-      console.log(`Chunk ${chunkIdx}: position ~${chunkPosition}, heading: ${currentHeading}`);
       return currentHeading;
     });
   }
@@ -375,40 +402,60 @@
   }
 
   function scrollToArticle() {
-    const selector = scrollTargetSelector || '#article-content';
-    console.log('[AudioPlayer] scrollToArticle called with selector:', selector);
-    const element = document.querySelector(selector);
-    console.log('[AudioPlayer] Found element:', element);
-    
-    if (element) {
-      console.log('[AudioPlayer] Scrolling to element with offset for sticky player');
+    if (chunkToHeadingMap.length === 0) {
+      console.log('[AudioPlayer] No heading map available');
+      return;
+    }
+
+    // Get the heading slug for the current chunk
+    const currentHeadingSlug = chunkToHeadingMap[currentChunkIndex];
+    console.log(`[AudioPlayer] Current chunk ${currentChunkIndex} maps to heading: ${currentHeadingSlug}`);
+
+    let targetElement = null;
+
+    // Try to scroll to the specific heading
+    if (currentHeadingSlug) {
+      // Look for heading by ID (slug)
+      targetElement = document.getElementById(currentHeadingSlug);
+      console.log(`[AudioPlayer] Searching for heading with ID "${currentHeadingSlug}":`, targetElement);
       
-      // Get the closest sticky parent (the player itself) to calculate offset
+      // If not found by ID, check in our cached elements
+      if (!targetElement && headingElements.has(currentHeadingSlug)) {
+        targetElement = headingElements.get(currentHeadingSlug) || null;
+        console.log('[AudioPlayer] Found in heading elements cache');
+      }
+    }
+
+    // Fallback to article top if no heading found
+    if (!targetElement) {
+      console.log('[AudioPlayer] No heading found, scrolling to article top');
+      targetElement = document.querySelector('#article-content');
+    }
+
+    if (targetElement) {
+      console.log('[AudioPlayer] Scrolling to element:', targetElement.textContent?.substring(0, 50));
+      
+      // Calculate position accounting for sticky player
       const stickyPlayer = document.querySelector('.audio-player.sticky');
       let stickyOffset = 0;
       
       if (stickyPlayer) {
-        stickyOffset = stickyPlayer.getBoundingClientRect().height;
-        console.log('[AudioPlayer] Sticky player height:', stickyOffset);
+        stickyOffset = stickyPlayer.getBoundingClientRect().height + 20;
+        console.log('[AudioPlayer] Sticky offset:', stickyOffset);
       }
       
-      // Calculate position accounting for sticky header
-      const rect = element.getBoundingClientRect();
+      // Scroll to position
+      const rect = targetElement.getBoundingClientRect();
       const scrollTop = window.scrollY || document.documentElement.scrollTop;
-      const targetScroll = scrollTop + rect.top - stickyOffset - 20; // Extra 20px padding
+      const targetScroll = scrollTop + rect.top - stickyOffset;
       
-      console.log('[AudioPlayer] Target scroll position:', targetScroll);
+      console.log('[AudioPlayer] Scrolling to position:', targetScroll);
       window.scrollTo({
         top: targetScroll,
         behavior: 'smooth'
       });
     } else {
-      console.error(`[AudioPlayer] Element not found with selector: ${selector}`);
-      // Try alternate selectors for debugging
-      console.log('[AudioPlayer] Trying alternate selectors:');
-      console.log('  - [#article-content]:', document.querySelector('#article-content'));
-      console.log('  - [article]:', document.querySelector('article'));
-      console.log('  - All articles:', document.querySelectorAll('article'));
+      console.error('[AudioPlayer] No element found to scroll to');
     }
   }
 
