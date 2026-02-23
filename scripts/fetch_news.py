@@ -357,16 +357,22 @@ Summary: [translated summary]"""
     return entry
 
 
-def fetch_feed_entries(url, feed_name, category="General"):
+def fetch_feed_entries(url, feed_name, category="General", config=None):
     """
     Fetch feed content using RSS or web scraping.
     
     For "Scraping Candidates" category, uses web scraping instead of RSS.
+    Supports incremental fetching with cache (Group 4.1).
     """
     # Check if this is a scraping candidate
     if is_scraping_candidate(category):
         logging.info(f"  [SCRAPER] Using web scraping for {feed_name}")
         return scrape_site(SESSION if SESSION else requests.Session(), feed_name, url)
+    
+    # Check if we should fetch this feed (cache logic)
+    if config and not should_fetch_feed(feed_name, config):
+        logging.debug(f"[CACHE] Skipping {feed_name} (cache still valid)")
+        return [], "CACHED"
     
     # Standard RSS fetching
     try:
@@ -393,6 +399,21 @@ def fetch_feed_entries(url, feed_name, category="General"):
             msg = f"Parse error: {feed.bozo_exception}"
             save_error_post(url, msg)
             return [], msg
+
+        # Update cache with successful fetch
+        if config and config.get("feed_caching", {}).get("enabled"):
+            cache = load_feed_cache(feed_name)
+            cache["last_fetch"] = datetime.now(LOCAL_TZ).isoformat()
+            if feed.entries:
+                try:
+                    latest_entry = feed.entries[0]
+                    if hasattr(latest_entry, 'published_parsed') and latest_entry.published_parsed:
+                        cache["last_article_date"] = datetime(*latest_entry.published_parsed[:6], tzinfo=LOCAL_TZ).isoformat()
+                except Exception:
+                    pass
+            cache["fetch_count"] = cache.get("fetch_count", 0) + 1
+            save_feed_cache(feed_name, cache)
+            logging.debug(f"[CACHE] Updated cache for {feed_name}")
 
         return feed.entries, "OK"
 
@@ -528,13 +549,78 @@ def semantic_similarity(text1, text2, config=None):
 
 def init_feed_cache():
     """Initialize feed cache directory for incremental fetch tracking."""
-    if Path(".feed_cache").exists():
-        return
+    cache_dir = Path(".feed_cache")
+    if not cache_dir.exists():
+        try:
+            cache_dir.mkdir(parents=True, exist_ok=True)
+            logging.debug("Feed cache directory initialized")
+        except Exception as e:
+            logging.warning(f"Failed to create feed cache: {e}")
+
+
+def get_feed_cache_file(feed_name):
+    """Get cache file path for a feed."""
+    import hashlib
+    # Create safe filename from feed name
+    safe_name = hashlib.md5(feed_name.encode()).hexdigest()[:12]
+    return Path(".feed_cache") / f"{safe_name}.json"
+
+
+def load_feed_cache(feed_name):
+    """Load cached metadata for a feed (last fetch time, last article date, etc.)."""
+    cache_file = get_feed_cache_file(feed_name)
+    if not cache_file.exists():
+        return {"feed_name": feed_name, "last_fetch": None, "last_article_date": None, "fetch_count": 0}
+    
     try:
-        Path(".feed_cache").mkdir(parents=True, exist_ok=True)
-        logging.debug("Feed cache directory initialized")
+        import json
+        with open(cache_file, 'r') as f:
+            return json.load(f)
     except Exception as e:
-        logging.warning(f"Failed to create feed cache: {e}")
+        logging.warning(f"Failed to load cache for {feed_name}: {e}")
+        return {"feed_name": feed_name, "last_fetch": None, "last_article_date": None, "fetch_count": 0}
+
+
+def save_feed_cache(feed_name, cache_data):
+    """Save cached metadata for a feed."""
+    cache_file = get_feed_cache_file(feed_name)
+    try:
+        import json
+        cache_file.parent.mkdir(parents=True, exist_ok=True)
+        with open(cache_file, 'w') as f:
+            json.dump(cache_data, f, indent=2)
+    except Exception as e:
+        logging.debug(f"Failed to save cache for {feed_name}: {e}")
+
+
+def should_fetch_feed(feed_name, config):
+    """Check if feed should be fetched based on cache (incremental fetch strategy)."""
+    cache_config = config.get("feed_caching", {})
+    if not cache_config.get("enabled"):
+        return True  # Always fetch if caching disabled
+    
+    cache = load_feed_cache(feed_name)
+    last_fetch = cache.get("last_fetch")
+    
+    if not last_fetch:
+        return True  # Never fetched before
+    
+    # Check if cache expired
+    expire_after = cache_config.get("expire_after", 604800)  # 7 days default
+    try:
+        from datetime import datetime
+        last_fetch_time = datetime.fromisoformat(last_fetch)
+        age_seconds = (datetime.now(LOCAL_TZ) - last_fetch_time.replace(tzinfo=LOCAL_TZ)).total_seconds()
+        
+        if age_seconds > expire_after:
+            logging.debug(f"[CACHE] {feed_name}: cache expired ({age_seconds:.0f}s > {expire_after}s), fetching fresh")
+            return True
+        else:
+            logging.debug(f"[CACHE] {feed_name}: using cached data (age: {age_seconds:.0f}s)")
+            return False
+    except Exception as e:
+        logging.debug(f"[CACHE] Error checking cache age for {feed_name}: {e}, fetching anyway")
+        return True
 
 
 def entry_matches(entry, pattern, config=None):
@@ -2202,9 +2288,12 @@ def main():
         category = source.get("category", "General")
 
         logging.info("[%d/%d] %s", i, len(sources), feed_name)
-        entries, status = fetch_feed_entries(url, feed_name, category)
+        entries, status = fetch_feed_entries(url, feed_name, category, config)  # Pass config for caching
 
-        if status != "OK":
+        if status == "CACHED":
+            logging.info("  ↻ Using cached data (not fetched)")
+            continue
+        elif status != "OK":
             errors += 1
             logging.warning("  ✗ Failed: %s", status)
             continue
