@@ -132,9 +132,12 @@
       utterance.onstart = () => {
         currentChunkIndex = index;
         currentUtteranceIndex = index;
-        // Extract first sentence for display (up to 150 chars)
-        const firstSentence = chunk.split(/[.!?\n]/)[0].trim();
-        currentSentence = firstSentence.substring(0, 150) + (firstSentence.length > 150 ? '...' : '');
+        isPlaying = true; // Ensure state is updated
+        // Extract first sentence for display (up to 200 chars)
+        const sentences = chunk.split(/[.!?]+/).filter(s => s.trim().length > 0);
+        const firstSentence = sentences[0]?.trim() || chunk.substring(0, 200);
+        currentSentence = firstSentence.substring(0, 200) + (firstSentence.length > 200 ? '...' : '');
+        console.log('Speaking:', currentSentence); // Debug log
         updateProgress();
       };
 
@@ -211,6 +214,7 @@
     currentChunkIndex = 0;
     progress = 0;
     currentTime = 0;
+    currentSentence = ''; // Clear transcript
   }
 
   function togglePlayPause() {
@@ -542,7 +546,7 @@
     </div>
 
     <!-- Current Sentence Display -->
-    {#if (isPlaying || isPaused) && currentSentence}
+    {#if isPlaying || isPaused}
       <div
         class="border-t border-border bg-secondary/30 px-4 py-3 text-sm text-foreground/80 italic"
       >
@@ -564,7 +568,13 @@
             <path d="m21 8-4-4-4 4" />
             <path d="M17 4v16" />
           </svg>
-          <span class="flex-1">{currentSentence}</span>
+          <span class="flex-1">
+            {#if currentSentence}
+              {currentSentence}
+            {:else}
+              <span class="text-muted-foreground">Starting...</span>
+            {/if}
+          </span>
         </div>
       </div>
     {/if}

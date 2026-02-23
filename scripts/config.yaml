@@ -12,6 +12,85 @@ sources:
   - name: Hugging Face AI Security
     url: https://huggingface.co/blog/feed.xml
     category: "AI & LLM"
+  
+  # === Major AI Research Labs ===
+  - name: DeepMind Blog
+    url: https://www.deepmind.com/blog/rss.xml
+    category: "AI & LLM"
+  - name: Anthropic Blog
+    url: https://anthropic.com/news/rss.xml
+    category: "AI & LLM"
+  - name: Meta AI Research
+    url: https://ai.meta.com/blog/rss/
+    category: "AI & LLM"
+  - name: Amazon Science Blog
+    url: https://www.amazon.science/blog/feed
+    category: "AI & LLM"
+  - name: IBM Research AI
+    url: https://www.ibm.com/blogs/research-feed.xml
+    category: "AI & LLM"
+  - name: Apple Machine Learning Research
+    url: https://machinelearning.apple.com/rss.xml
+    category: "AI & LLM"
+  - name: NVIDIA AI Blog
+    url: https://blogs.nvidia.com/feed/
+    category: "AI & LLM"
+  
+  # === University AI Labs ===
+  - name: Stanford HAI News
+    url: https://hai.stanford.edu/news/rss.xml
+    category: "AI & LLM"
+  - name: MIT CSAIL News
+    url: https://www.csail.mit.edu/news/feed
+    category: "AI & LLM"
+  - name: Berkeley AI Research Blog
+    url: https://bair.berkeley.edu/blog/feed.xml
+    category: "AI & LLM"
+  - name: CMU Machine Learning Blog
+    url: https://blog.ml.cmu.edu/feed/
+    category: "AI & LLM"
+  
+  # === AI Industry News & Analysis ===
+  - name: VentureBeat AI
+    url: https://venturebeat.com/category/ai/feed/
+    category: "AI & LLM"
+  - name: The Verge AI Coverage
+    url: https://www.theverge.com/ai-artificial-intelligence/rss/index.xml
+    category: "AI & LLM"
+  - name: MIT Technology Review
+    url: https://www.technologyreview.com/feed/
+    category: "AI & LLM"
+  - name: Ars Technica AI & ML
+    url: https://feeds.arstechnica.com/arstechnica/technology-lab
+    category: "AI & LLM"
+  - name: Artificial Intelligence News
+    url: https://www.artificialintelligence-news.com/feed/
+    category: "AI & LLM"
+  
+  # === ML Engineering & Production ===
+  - name: Netflix Tech Blog
+    url: https://netflixtechblog.com/feed
+    category: "AI & LLM"
+  - name: Uber Engineering Blog
+    url: https://www.uber.com/blog/engineering/rss
+    category: "AI & LLM"
+  - name: Airbnb Engineering & Data Science
+    url: https://medium.com/feed/airbnb-engineering
+    category: "AI & LLM"
+  - name: Spotify Engineering
+    url: https://engineering.atspotify.com/feed/
+    category: "AI & LLM"
+  
+  # === Specialized AI Content ===
+  - name: Import AI Newsletter
+    url: https://jack-clark.net/feed/
+    category: "AI & LLM"
+  - name: Hugging Face Daily Papers
+    url: https://huggingface.co/papers/feed
+    category: "AI & LLM"
+  - name: Synced AI Technology & Industry Review
+    url: https://syncedreview.com/feed/
+    category: "AI & LLM"
 
   # === Cloud Provider Updates ===
   - name: AWS News
