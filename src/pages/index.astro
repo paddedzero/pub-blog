@@ -3,7 +3,7 @@ import Layout from '@/layouts/Layout.astro';
 import { getCollection } from 'astro:content';
 import PostCard from '@/components/PostCard.svelte';
 import { getReadTime } from '@/lib/utils/readTime';
-import { getPublishedPosts, getPostSlug } from '@/lib/utils/posts';
+import { getPublishedPosts, getPostSlug, getPublishedNewsfeed, getNewsfeedSlug } from '@/lib/utils/posts';
 import { SITE } from '@/config';
 import { Image } from 'astro:assets';
 import profilePhoto from '@/site-assets/profile_photo.png';
@@ -23,12 +23,12 @@ const projects = (await getCollection('projects'))
   .sort((a, b) => a.data.order - b.data.order)
   .slice(0, SITE.homeProjects.count);
 
+const newsfeedItems = (await getPublishedNewsfeed()).sort(
+  (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
+).slice(0, 5);
+
 const base = SITE.base;
 const toPath = (path: string) => `${base}${path.replace(/^\/+/, '')}`;
-
-const appearances = (await getCollection('appearances'))
-  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
-  .slice(0, 3);
 ---
 
 <Layout title="Welcome">
@@ -253,55 +253,30 @@ const appearances = (await getCollection('appearances'))
       )
     }
 
-    <!-- 5. Talks / Appearances -->
-    <section>
-      <div class="flex items-baseline justify-between mb-8 sm:mb-12">
-        <h2 class="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
-          Talks & Appearances
-        </h2>
-        <div class="h-px flex-1 mx-4 sm:mx-8 bg-border opacity-70"></div>
-        <a
-          href={toPath('appearances')}
-          class="px-2 py-0.5 rounded-md text-xs font-bold uppercase tracking-widest hover:bg-accent hover:text-primary transition-all no-underline"
-          >View appearances</a
-        >
-      </div>
-      <div class="space-y-4 sm:space-y-6">
-        {
-          appearances.map((item) => (
+    <!-- 5. News Feed -->
+    {
+      newsfeedItems.length > 0 && (
+        <section>
+          <div class="flex items-baseline justify-between mb-8 sm:mb-12">
+            <h2 class="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
+              News Feed
+            </h2>
+            <div class="h-px flex-1 mx-4 sm:mx-8 bg-border opacity-70" />
             <a
-              href={item.data.link}
-              class="flex items-center justify-between py-3 group no-underline transition-all hover:translate-x-1"
+              href={toPath('newsfeed')}
+              class="px-2 py-0.5 rounded-md text-xs font-bold uppercase tracking-widest hover:bg-accent hover:text-primary transition-all no-underline"
             >
-              <div class="flex flex-col">
-                <span class="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1">
-                  {item.data.event}
-                </span>
-                <span class="font-bold text-sm sm:text-base text-foreground group-hover:text-primary transition-colors leading-tight">
-                  {item.data.title}
-                </span>
-              </div>
-              <div class="flex items-center gap-4">
-                {item.data.lang && item.data.lang !== 'en' && (
-                  <span
-                    class="inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded bg-secondary/50 text-[10px] font-bold uppercase tracking-tighter text-muted-foreground group-hover:text-foreground transition-colors cursor-help"
-                    title={`Language: ${item.data.lang}`}
-                  >
-                    <span class="text-sm leading-none group-hover:scale-110 transition-transform">
-                      {getLangFlag(item.data.lang)}
-                    </span>
-                    {item.data.lang}
-                  </span>
-                )}
-                <span class="text-xs font-medium text-muted-foreground tabular-nums">
-                  {item.data.date.getFullYear()}
-                </span>
-              </div>
+              View all feeds
             </a>
-          ))
-        }
-      </div>
-    </section>
+          </div>
+          <div class="grid gap-3 sm:gap-4">
+            {newsfeedItems.map((post) => (
+              <PostCard {post} slug={getNewsfeedSlug(post)} readTime={getReadTime(post.body || '')} />
+            ))}
+          </div>
+        </section>
+      )
+    }
   </div>
 </Layout>
 

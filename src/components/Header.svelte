@@ -13,7 +13,7 @@
   const navLinks: NavLink[] = [
     { name: 'Posts', href: `${base}posts` },
     { name: 'Projects', href: `${base}projects` },
-    { name: 'Appearances', href: `${base}appearances` },
+    { name: 'Newsfeed', href: `${base}newsfeed` },
     { name: 'About', href: `${base}about` },
   ];
 </script>
