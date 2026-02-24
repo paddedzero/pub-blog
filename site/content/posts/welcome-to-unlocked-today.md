@@ -26,13 +26,13 @@ Since I decided to set up my pages at GitHub Pages, it was worth documenting som
 
 Register your account at https://www.github.com.
 
-![GitHub signup](/images/2020-07-26/signup-github.png)
+![GitHub signup](/pub-blog/images/2020-07-26/signup-github.png)
 
 GitHub is used as a hosting platform for software development and version control. It is commonly used for open-source projects and is free.
 
 Once you have created your account you will be brought to this page.
 
-![Create repository](/images/2020-07-26/create-a-new-github-repository.png)
+![Create repository](/pub-blog/images/2020-07-26/create-a-new-github-repository.png)
 
 Give it a recognizable name. Take note that this will be accessible to the world unless you set it to private. However, since we are setting up a website, this will be set to public. Imagine this like your giant folder accessible through the internet.
 
@@ -42,13 +42,13 @@ The fun bit. At this point, you can jump to Step 3 and then come back here, or y
 
 Click Settings in your new repository.
 
-![Settings](/images/2020-07-26/github-pages-part1.png)
+![Settings](/pub-blog/images/2020-07-26/github-pages-part1.png)
 
 Fill in your new page name as per above. The username needs to match your profile username. This is how the internet will reach your GitHub Pages website at <USERNAME>.github.io.
 
 If you scroll further down the same Settings page you will come across this.
 
-![GitHub Pages settings](/images/2020-07-26/github-pages-part2.png)
+![GitHub Pages settings](/pub-blog/images/2020-07-26/github-pages-part2.png)
 
 For now just take note that if you want to use your own customized URL, this is where you need to add it in. This setting also allows you to choose pre-defined themes created by GitHub Pages but for the purpose of this exercise we will use a customized one. So just mark this page for future reference.
 
@@ -71,13 +71,13 @@ Keep in mind, I am going for a free and basic site that still gives you the powe
 
 So with that in mind, go to GitHub and click on the link for minimalmistakes, which brings you to a page like below.
 
-![Minimal Mistakes](/images/2020-07-26/fork-part2.png)
+![Minimal Mistakes](/pub-blog/images/2020-07-26/fork-part2.png)
 
 What we are trying to do is use this repository as our base. There are a few ways to do it. If you have performed Step 1 and 2 then you just need to download and upload back into your created repository. That is it to get your site up and going.
 
 The other method is forking, which will replicate the Jekyll template at a click of a button. On the right-hand side of the repository screen you will see the Fork button.
 
-![Fork repository](/images/2020-07-26/fork-part1.png)
+![Fork repository](/pub-blog/images/2020-07-26/fork-part1.png)
 
 You will then have the entire repository of minimalmistakes in your folder. All you have to do now is follow Step 2 to change this repository name as well as set up your custom domain name if you have one.
 
@@ -87,11 +87,11 @@ At this point, give it around 10 minutes to populate. By now your page should be
 
 Next you need to customize the file `_config.yaml` which exists in the main folder of your forked repository. To keep it simple, just click the file and it will open up this page.
 
-![Config file](/images/2020-07-26/config-yml-part1.png)
+![Config file](/pub-blog/images/2020-07-26/config-yml-part1.png)
 
 For the most part, you can edit all your files in a similar way. Next, edit this file. There is an icon for edit on the right-hand side of the box.
 
-![Edit config](/images/2020-07-26/config-yml-part2.png)
+![Edit config](/pub-blog/images/2020-07-26/config-yml-part2.png)
 
 Customize the config.yaml to match your preferred details. For a start, try changing the URL to match your URL and also the various descriptions. Change values which are after the ':' on the right-hand side of the code.
 
