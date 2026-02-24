@@ -5,6 +5,9 @@ pubDate: 2020-07-26
 tags: ["jekyll", "github-pages", "tutorial"]
 featured: false
 ---
+Keeping one of my archived post for history keeping as to when i first started off trying github pages back in 2020 and how far along we've come in terms of using github pages and llm tools for creating code. The stuff below that took me a bit of time to learn can be completed in just a couple line of prompts and takes a couple of hours to complete.
+
+----
 
 I've decided to move my page to GitHub Pages. I decided to start fresh and not migrate my WordPress content. If this is your first time working with git, GitHub, Jekyll, Markdown, or static site generators, starting fresh can be a good option.
 
