@@ -64,6 +64,7 @@ jobs:
           user-email: 'action@github.com'
           user-name: 'GitHub Action'
           target-branch: 'main'
+          create-target-branch-if-needed: true
 
       - name: Cleanup temp_dist
         if: always()
