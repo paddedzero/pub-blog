@@ -1,0 +1,70 @@
+name: Distribute to feedmeup
+
+on:
+  schedule:
+    - cron: '0 8 * * 1'  # Monday 08:00 UTC
+  workflow_dispatch:       # Manual trigger from Actions tab
+
+permissions:
+  contents: write
+
+jobs:
+  distribute:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout pub-blog
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run news aggregation
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python scripts/fetch_news.py
+
+      - name: Commit new posts to pub-blog (preview)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+
+          git add site/content/newsfeed/ || true
+          git add site/content/errors/ || true
+
+          if git diff --staged --quiet; then
+            echo "No new posts generated."
+          else
+            git commit -m "📰 Auto-generated news posts - $(date +'%Y-%m-%d %H:%M UTC')"
+            git pull origin main --no-edit
+            git push origin main
+          fi
+
+      - name: Sanitize for public distribution
+        run: python scripts/sanitize_for_distribution.py
+
+      - name: Push to feedmeup
+        uses: cpina/github-action-push-to-another-repository@v1.7.2
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.FEEDMEUP_PAT }}
+        with:
+          source-directory: 'temp_dist'
+          destination-github-username: 'paddedzero'
+          destination-repository-name: 'feedmeup'
+          user-email: 'action@github.com'
+          user-name: 'GitHub Action'
+          target-branch: 'main'
+
+      - name: Cleanup temp_dist
+        if: always()
+        run: rm -rf temp_dist/

@@ -53,6 +53,10 @@ CONFIG_FILE = "scripts/config.yaml"
 POSTS_DIR = Path("site/content/newsfeed")
 ERRORS_DIR = Path("site/content/errors")
 
+# Distribution staging directories (for push to feedmeup)
+DIST_POSTS_DIR = Path("temp_dist/site/content/newsfeed")
+DIST_ERRORS_DIR = Path("temp_dist/site/content/errors")
+
 # Use America/New_York as the local timezone
 LOCAL_TZ = ZoneInfo("America/New_York")
 
@@ -112,6 +116,39 @@ def compile_keywords_pattern(keywords, config=None):
     return re.compile(pattern)
 
 
+def write_dual_output(filename, content):
+    """Write content to both preview (POSTS_DIR) and distribution (DIST_POSTS_DIR) paths.
+    
+    This ensures fetch_news.py outputs are available for:
+    1. Local preview in pub-blog (site/content/newsfeed/)
+    2. Distribution staging for feedmeup (temp_dist/site/content/newsfeed/)
+    
+    Args:
+        filename: Path object for the preview file (under POSTS_DIR or ERRORS_DIR)
+        content: Full file content (frontmatter + body)
+    """
+    # Write to preview path (original behavior)
+    with open(filename, "w", encoding="utf-8") as f:
+        f.write(content)
+    logging.info("[PREVIEW] Written: %s", filename)
+    
+    # Determine distribution path by replacing the base directory
+    filename_path = Path(filename)
+    if str(filename_path).startswith(str(ERRORS_DIR)):
+        dist_filename = DIST_ERRORS_DIR / filename_path.relative_to(ERRORS_DIR)
+    elif str(filename_path).startswith(str(POSTS_DIR)):
+        dist_filename = DIST_POSTS_DIR / filename_path.relative_to(POSTS_DIR)
+    else:
+        logging.warning("[DIST] Unknown base path for %s; skipping distribution copy", filename)
+        return
+    
+    # Write to distribution path
+    dist_filename.parent.mkdir(parents=True, exist_ok=True)
+    with open(dist_filename, "w", encoding="utf-8") as f:
+        f.write(content)
+    logging.info("[DIST] Written: %s", dist_filename)
+
+
 def save_error_post(feed_url, error_message):
     """Save feed fetch error into _errors folder instead of _posts."""
     try:
@@ -134,8 +171,7 @@ aiGenerated: false
 
 """
         content = f"**Failed to fetch feed:** {feed_url}\n\n**Error:** {error_message}\n"
-        with open(filename, "w", encoding="utf-8") as f:
-            f.write(front_matter + content)
+        write_dual_output(filename, front_matter + content)
         logging.error("[ERROR POST] Saved to %s", filename)
     except Exception:
         logging.exception("Failed to write error post")
@@ -1705,8 +1741,7 @@ aiGenerated: true
     if cve_reference_section:
         body += "\n" + cve_reference_section + "\n"
 
-    with open(filename, "w", encoding="utf-8") as f:
-        f.write(front_matter + body)
+    write_dual_output(filename, front_matter + body)
     logging.info("[NEWS BRIEF] Created: %s", filename)
 
 
@@ -2053,8 +2088,7 @@ These thematic groupings highlight how similar security issues are emerging acro
     
     body += closing
     
-    with open(filename, "w", encoding="utf-8") as f:
-        f.write(front_matter + body)
+    write_dual_output(filename, front_matter + body)
     
     return str(filename)
 
@@ -2396,8 +2430,7 @@ showComments: false
     if cve_reference_section:
         body += "\n" + cve_reference_section + "\n"
 
-    with open(filename, "w", encoding="utf-8") as f:
-        f.write(front_matter + body)
+    write_dual_output(filename, front_matter + body)
     
     logging.info("[WEEKLY SCAN] Created: %s", filename)
     logging.info("[PHASE 2] Weekly Scan (with Narrative News Briefing) + Analyst Opinion posts generated successfully")
@@ -2730,8 +2763,7 @@ Here are the **Top 3 Articles of the Week**—comprehensive analysis of the most
 
     body = intro_section + articles_body + closing_section
 
-    with open(filename, "w", encoding="utf-8") as f:
-        f.write(front_matter + body)
+    write_dual_output(filename, front_matter + body)
     
     logging.info("[ANALYST OPINION] Created with Top 3 deep analysis: %s", filename)
     return filename

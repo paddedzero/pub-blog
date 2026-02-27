@@ -221,3 +221,9 @@ yarn-error.log*
 dist/
 .env
 .env.production
+
+# Distribution staging (ephemeral, created per-run by sanitize_for_distribution.py)
+/temp_dist/
+
+# Draft posts (private, not distributed to feedmeup)
+site/content/_drafts/
